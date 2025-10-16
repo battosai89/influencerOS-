@@ -1,0 +1,21 @@
+{
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  "css.customAtRules": [
+    "tailwind",
+    "apply",
+    "layer",
+    "config",
+    "theme",
+    "utilities",
+    "components",
+    "base"
+  ],
+  "stylelint.enable": true,
+  "stylelint.validate": ["css", "scss", "less"],
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact"
+  }
+}

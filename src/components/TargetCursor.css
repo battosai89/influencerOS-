@@ -1,0 +1,174 @@
+.target-cursor-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  width: 0;
+  height: 0;
+}
+
+.target-cursor-dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.target-cursor-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 3px solid #fff;
+  will-change: transform;
+}
+
+.corner-tl {
+  top: 50%;
+  left: 50%;
+  transform: translate(-18px, -18px);
+}
+
+.corner-tr {
+  top: 50%;
+  left: 50%;
+  transform: translate(6px, -18px);
+}
+
+.corner-br {
+  top: 50%;
+  left: 50%;
+  transform: translate(6px, 6px);
+}
+
+.corner-bl {
+  top: 50%;
+  left: 50%;
+  transform: translate(-18px, 6px);
+}
+
+/* Hover effects */
+.target-cursor-wrapper.hovering .target-cursor-dot {
+  transform: translate(-50%, -50%) scale(1.5);
+  transition: transform 0.2s ease;
+}
+
+.target-cursor-wrapper.hovering .target-cursor-corner {
+  transform: scale(1.3);
+  transition: transform 0.2s ease;
+}
+
+.target-cursor-wrapper.hovering .corner-tl {
+  transform: translate(-150%, -150%) scale(1.3);
+}
+
+.target-cursor-wrapper.hovering .corner-tr {
+  transform: translate(50%, -150%) scale(1.3);
+}
+
+.target-cursor-wrapper.hovering .corner-br {
+  transform: translate(50%, 50%) scale(1.3);
+}
+
+.target-cursor-wrapper.hovering .corner-bl {
+  transform: translate(-150%, 50%) scale(1.3);
+}
+
+/* Cursor target elements */
+.cursor-target {
+  cursor: none;
+  transition: all 0.2s ease;
+}
+
+.cursor-target:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* Hide default cursor globally when component is active */
+body:has(.target-cursor-wrapper) {
+  cursor: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .target-cursor-wrapper {
+    display: none;
+  }
+  
+  .cursor-target {
+    cursor: auto;
+  }
+  
+  body:has(.target-cursor-wrapper) {
+    cursor: auto;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+@keyframes pulse-hover {
+  0%, 100% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.8;
+  }
+}
+
+/* Cursor target elements */
+.cursor-target {
+  cursor: none;
+  transition: all 0.2s ease;
+}
+
+.cursor-target:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* Hide default cursor globally when component is active */
+body:has(.target-cursor) {
+  cursor: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .target-cursor {
+    display: none;
+  }
+  
+  .cursor-target {
+    cursor: auto;
+  }
+  
+  body:has(.target-cursor) {
+    cursor: auto;
+  }
+}
