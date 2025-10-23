@@ -161,6 +161,7 @@ interface StoreActions {
   getCampaign: (id: string) => Campaign | undefined;
   getContentPiece: (id: string) => ContentPiece | undefined;
   getContractTemplate: (id: string) => ContractTemplate | undefined;
+  getTimeEntry: (id: string) => TimeEntry | undefined;
 
   // Data mutations
   addClient: (data: Partial<Influencer> | Partial<Brand>, type: 'influencer' | 'brand') => void;
@@ -328,6 +329,7 @@ const useStore = create<Store>((set, get) => ({
   getCampaign: (id) => get().supabaseCampaigns.find(c => c.id === id),
   getContentPiece: (id) => get().supabaseContentPieces.find(c => c.id === id),
   getContractTemplate: (id) => get().supabaseContractTemplates.find(t => t.id === id),
+  getTimeEntry: (id) => get().timeEntries.find(t => t.id === id),
 
     // Data mutations
     addClient: async (data, type) => {

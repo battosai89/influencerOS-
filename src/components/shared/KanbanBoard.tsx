@@ -1,7 +1,10 @@
 "use client";
 
 import React from 'react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Influencer, Brand } from '@/types';
+import KanbanColumn from './KanbanColumn';
 
 interface KanbanBoardProps {
   items: (Influencer | Brand)[];
@@ -10,12 +13,38 @@ interface KanbanBoardProps {
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ items, stages, onItemMove }) => {
-  // Placeholder for Kanban board component
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const newStage = over.id as string;
+      onItemMove(active.id as string, newStage);
+    }
+  };
+
   return (
     <div className="p-4 border rounded-lg">
-      <h3 className="text-lg font-semibold mb-2">Kanban Board (Coming Soon)</h3>
-      <p>Drag-drop pipeline will be implemented here.</p>
-      {/* TODO: Implement Kanban with @dnd-kit */}
+      <h3 className="text-lg font-semibold mb-4">CRM Pipeline</h3>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {stages.map((stage) => (
+            <KanbanColumn
+              key={stage}
+              id={stage}
+              title={stage}
+              items={items.filter(item => (item as any).leadStage === stage || (stage === 'new' && !(item as any).leadStage))}
+            />
+          ))}
+        </div>
+      </DndContext>
     </div>
   );
 };

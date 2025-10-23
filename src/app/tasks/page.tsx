@@ -3,15 +3,17 @@
 import * as React from 'react';
 import { useState } from 'react';
 import useStore from '@/hooks/useStore';
-import { Plus, CheckCircle, Circle, Calendar, Flag, Filter } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Calendar, Flag, Filter, BarChart3, List } from 'lucide-react';
 import { TaskModal } from '@/components/CreationModals';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import notificationService from '@/services/notificationService';
+import { DraggableTimeline } from '@/components/shared';
 
 const Tasks: React.FC = () => {
     const { tasks, updateTask, deleteTask, addTask, supabaseTasks } = useStore();
     const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [view, setView] = useState<'list' | 'gantt'>('list');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
@@ -121,6 +123,28 @@ const Tasks: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    {/* View Toggle */}
+                    <div className="flex gap-1 p-1 bg-brand-bg rounded-lg border border-brand-border">
+                        <button
+                            onClick={() => setView('list')}
+                            className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1 ${
+                                view === 'list' ? 'bg-brand-primary text-white' : 'text-brand-text-secondary'
+                            }`}
+                        >
+                            <List className="w-4 h-4" />
+                            List
+                        </button>
+                        <button
+                            onClick={() => setView('gantt')}
+                            className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1 ${
+                                view === 'gantt' ? 'bg-brand-primary text-white' : 'text-brand-text-secondary'
+                            }`}
+                        >
+                            <BarChart3 className="w-4 h-4" />
+                            Gantt
+                        </button>
+                    </div>
+                    {/* Filter Buttons */}
                     {(['all', 'pending', 'completed'] as const).map((filterType) => (
                         <button
                             key={filterType}
@@ -137,64 +161,71 @@ const Tasks: React.FC = () => {
                 </div>
             </div>
 
-            {/* Tasks List */}
-            <div className="space-y-4">
-                {filteredTasks.map((task) => (
-                    <div
-                        key={task.id}
-                        className="bg-brand-surface futuristic-border rounded-xl p-6 hover:bg-brand-bg/50 transition-colors"
-                    >
-                        <div className="flex items-start gap-4">
-                            <button
-                                onClick={() => handleToggleComplete(task.id)}
-                                className={`mt-1 transition-colors ${
-                                    task.status === 'completed' 
-                                        ? 'text-brand-success' 
-                                        : 'text-brand-text-secondary hover:text-brand-primary'
-                                }`}
-                            >
-                                {task.status === 'completed' ? (
-                                    <CheckCircle className="w-5 h-5" />
-                                ) : (
-                                    <Circle className="w-5 h-5" />
-                                )}
-                            </button>
-                            
-                            <div className="flex-1">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <h3 className={`font-semibold ${
-                                            task.status === 'completed' 
-                                                ? 'text-brand-text-secondary line-through' 
-                                                : 'text-brand-text-primary'
-                                        }`}>
-                                            {task.title}
-                                        </h3>
+            {/* Tasks List or Gantt View */}
+            {view === 'list' ? (
+                <div className="space-y-4">
+                    {filteredTasks.map((task) => (
+                        <div
+                            key={task.id}
+                            className="bg-brand-surface futuristic-border rounded-xl p-6 hover:bg-brand-bg/50 transition-colors"
+                        >
+                            <div className="flex items-start gap-4">
+                                <button
+                                    onClick={() => handleToggleComplete(task.id)}
+                                    className={`mt-1 transition-colors ${
+                                        task.status === 'completed'
+                                            ? 'text-brand-success'
+                                            : 'text-brand-text-secondary hover:text-brand-primary'
+                                    }`}
+                                >
+                                    {task.status === 'completed' ? (
+                                        <CheckCircle className="w-5 h-5" />
+                                    ) : (
+                                        <Circle className="w-5 h-5" />
+                                    )}
+                                </button>
+                                
+                                <div className="flex-1">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <h3 className={`font-semibold ${
+                                                task.status === 'completed'
+                                                    ? 'text-brand-text-secondary line-through'
+                                                    : 'text-brand-text-primary'
+                                            }`}>
+                                                {task.title}
+                                            </h3>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2 ml-4">
+                                            <button
+                                                onClick={() => handleDelete(task.id)}
+                                                className="text-brand-text-secondary hover:text-red-500 transition-colors"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-2 ml-4">
-                                        <button
-                                            onClick={() => handleDelete(task.id)}
-                                            className="text-brand-text-secondary hover:text-red-500 transition-colors"
-                                        >
-                                            ×
-                                        </button>
+                                    <div className="flex items-center gap-4 mt-3 text-sm text-brand-text-secondary">
+                                        {task.dueDate && (
+                                            <div className="flex items-center gap-1">
+                                                <Calendar className="w-3 h-3" />
+                                                <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                                
-                                <div className="flex items-center gap-4 mt-3 text-sm text-brand-text-secondary">
-                                    {task.dueDate && (
-                                        <div className="flex items-center gap-1">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            ) : (
+                <DraggableTimeline
+                    tasks={filteredTasks}
+                    onTaskUpdate={updateTask}
+                />
+            )}
 
             {filteredTasks.length === 0 && (
                 <div className="text-center py-12">

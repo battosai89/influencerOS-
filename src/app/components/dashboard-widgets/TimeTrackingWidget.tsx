@@ -2,18 +2,17 @@ import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock } from 'lucide-react';
 
+// Temporary placeholder for TimeTrackingWidget
+// TODO: Integrate with store once typing issues are resolved
 const TimeTrackingWidget: React.FC = () => {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className="h-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-sm font-medium">Time Tracking</CardTitle>
         <Clock className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">124h</div>
-        <p className="text-xs text-muted-foreground">
-          This month
-        </p>
+        <p className="text-sm text-muted-foreground">Time tracking component coming soon.</p>
       </CardContent>
     </Card>
   );
