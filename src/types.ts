@@ -11,71 +11,77 @@ export interface CommunicationLogItem {
 }
 
 export interface Influencer {
-  id: string;
-  name: string;
-  avatarUrl?: string;
-  avatar?: string; // For backwards compatibility
-  platform: 'Instagram' | 'TikTok' | 'YouTube';
-  followers: number;
-  status: 'active' | 'inactive' | 'lead' | 'contacted' | 'negotiating' | 'signed';
-  engagementRate: number;
-  notes?: string;
-  instagram?: string;
-  tiktok?: string;
-  youtube?: string;
-  // New fields for Creator & Relationship widgets
-  niche: string;
-  rating: number; // 1-5 star rating
-  location: string; // e.g., "New York, USA"
-  availability: 'available' | 'booked' | 'on-hold';
-  // New field for Audience Demographics widget
-  audience: {
-    gender: { male: number; female: number; other: number }; // percentages
-    topLocations: { name: string; percentage: number }[];
-  };
-  // New field for CRM
-  communicationLog: CommunicationLogItem[];
-  // Additional fields for influencer detail view
-  contact?: {
-    email: string;
-    phone: string;
-  };
-  joinedDate?: string;
-  lastActive?: string;
-  socialLinks?: Array<{
-    platform: string;
-    url: string;
-  }>;
-  campaigns?: Array<{
-    id: string;
-    name: string;
-    status: string;
-    startDate: string;
-    endDate: string;
-  }>;
-  contracts?: Array<{
-    id: string;
-    name: string;
-    status: string;
-    startDate: string;
-    endDate: string;
-  }>;
-}
+   id: string;
+   name: string;
+   avatarUrl?: string;
+   avatar?: string; // For backwards compatibility
+   platform: 'Instagram' | 'TikTok' | 'YouTube';
+   followers: number;
+   status: 'lead' | 'contacted' | 'negotiating' | 'signed' | 'active' | 'inactive'; // Reordered for CRM pipeline
+   engagementRate: number;
+   notes?: string;
+   instagram?: string;
+   tiktok?: string;
+   youtube?: string;
+   // New fields for Creator & Relationship widgets
+   niche: string;
+   rating: number; // 1-5 star rating
+   location: string; // e.g., "New York, USA"
+   availability: 'available' | 'booked' | 'on-hold';
+   // New field for Audience Demographics widget
+   audience: {
+     gender: { male: number; female: number; other: number }; // percentages
+     topLocations: { name: string; percentage: number }[];
+   };
+   // New field for CRM
+   communicationLog: CommunicationLogItem[];
+   leadStage?: 'new' | 'qualified' | 'proposal' | 'negotiation' | 'closed-won' | 'closed-lost'; // CRM stages
+   leadScore?: number; // 0-100, calculated by AI
+   // Additional fields for influencer detail view
+   contact?: {
+     email: string;
+     phone: string;
+   };
+   joinedDate?: string;
+   lastActive?: string;
+   socialLinks?: Array<{
+     platform: string;
+     url: string;
+   }>;
+   campaigns?: Array<{
+     id: string;
+     name: string;
+     status: string;
+     startDate: string;
+     endDate: string;
+   }>;
+   contracts?: Array<{
+     id: string;
+     name: string;
+     status: string;
+     startDate: string;
+     endDate: string;
+   }>;
+ }
 
 export interface Brand {
-  id: string;
-  name: string;
-  logoUrl: string;
-  industry: string;
-  website?: string;
-  notes?: string;
-  // New field for Brand Relationship Health widget
-  satisfaction: number; // 0-100 score
-  // New fields for Client Portal
-  portalAccess: boolean;
-  portalUserEmail?: string;
-  portalPassword?: string; // In a real app, this would be a hash
-}
+   id: string;
+   name: string;
+   logoUrl: string;
+   industry: string;
+   website?: string;
+   notes?: string;
+   // New field for Brand Relationship Health widget
+   satisfaction: number; // 0-100 score
+   // New fields for Client Portal
+   portalAccess: boolean;
+   portalUserEmail?: string;
+   portalPassword?: string; // In a real app, this would be a hash
+   // CRM fields
+   leadStage?: 'prospect' | 'qualified' | 'proposal' | 'negotiation' | 'closed-won' | 'closed-lost';
+   leadScore?: number; // 0-100
+   communicationLog: CommunicationLogItem[];
+ }
 
 export interface ContractClause {
   title: string;
@@ -175,15 +181,32 @@ export interface ContentPiece {
 }
 
 
+export interface TimeEntry {
+   id: string;
+   taskId?: string;
+   description: string;
+   startTime: string;
+   endTime?: string;
+   duration?: number; // in minutes
+   date: string;
+   category?: string;
+ }
+
 export interface Task {
-  id:string;
-  title: string;
-  dueDate: string;
-  status: 'pending' | 'completed';
-  relatedContractId?: string;
-  relatedCampaignId?: string;
-  parentId?: string;
-}
+   id: string;
+   title: string;
+   dueDate: string;
+   status: 'pending' | 'completed';
+   relatedContractId?: string;
+   relatedCampaignId?: string;
+   parentId?: string;
+   dependencies?: string[]; // Array of task IDs this task depends on
+   startDate?: string;
+   endDate?: string;
+   priority?: 'low' | 'medium' | 'high';
+   assignee?: string;
+   progress?: number; // 0-100
+ }
 
 export interface Transaction {
   id: string;
@@ -198,18 +221,22 @@ export interface Transaction {
   campaignId?: string;
 }
 
-export type EventType = 'Appointment' | 'Deadline' | 'Meeting' | 'Campaign Milestone';
+export type EventType = 'Appointment' | 'Deadline' | 'Meeting' | 'Campaign Milestone' | 'Task' | 'Reminder';
 
 export interface Event {
-    id: string;
-    title: string;
-    start: Date;
-    end: Date;
-    allDay?: boolean;
-    type: EventType;
-    brandId?: string;
-    campaignId?: string;
-}
+     id: string;
+     title: string;
+     start: Date;
+     end: Date;
+     allDay?: boolean;
+     type: EventType;
+     brandId?: string;
+     campaignId?: string;
+     taskId?: string; // For task integration
+     pollOptions?: string[]; // For scheduling polls
+     invitees?: string[]; // Emails or IDs
+     description?: string;
+ }
 
 export interface DashboardTab {
   id: string;

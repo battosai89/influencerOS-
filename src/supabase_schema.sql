@@ -48,7 +48,10 @@ CREATE TABLE influencers (
     availability TEXT NOT NULL,
     "audienceGenderMale" INTEGER NOT NULL,
     "audienceGenderFemale" INTEGER NOT NULL,
-    "audienceGenderOther" INTEGER NOT NULL
+    "audienceGenderOther" INTEGER NOT NULL,
+    "leadStage" TEXT,
+    "leadScore" INTEGER,
+    "communicationLog" JSONB -- Array of log items
 );
 
 -- CreateTable: AudienceTopLocation
@@ -79,7 +82,10 @@ CREATE TABLE brands (
     satisfaction INTEGER NOT NULL,
     "portalAccess" BOOLEAN NOT NULL,
     "portalUserEmail" TEXT,
-    "portalPassword" TEXT
+    "portalPassword" TEXT,
+    "leadStage" TEXT,
+    "leadScore" INTEGER,
+    "communicationLog" JSONB
 );
 
 -- CreateTable: ContractTemplate
@@ -184,7 +190,25 @@ CREATE TABLE tasks (
     status TEXT NOT NULL,
     "relatedContractId" TEXT REFERENCES contracts(id) ON DELETE SET NULL,
     "relatedCampaignId" TEXT REFERENCES campaigns(id) ON DELETE SET NULL,
-    "parentId" TEXT REFERENCES tasks(id) ON DELETE SET NULL
+    "parentId" TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+    dependencies TEXT[], -- Array of task IDs
+    "startDate" TEXT,
+    "endDate" TEXT,
+    priority TEXT DEFAULT 'medium',
+    assignee TEXT,
+    progress INTEGER DEFAULT 0
+);
+
+-- CreateTable: TimeEntry
+CREATE TABLE "timeEntries" (
+    id TEXT PRIMARY KEY,
+    "taskId" TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+    description TEXT NOT NULL,
+    "startTime" TIMESTAMP NOT NULL,
+    "endTime" TIMESTAMP,
+    duration INTEGER, -- in minutes
+    date TEXT NOT NULL,
+    category TEXT
 );
 
 -- CreateTable: Transaction
@@ -210,7 +234,11 @@ CREATE TABLE events (
     "allDay" BOOLEAN,
     type TEXT NOT NULL,
     "brandId" TEXT REFERENCES brands(id) ON DELETE SET NULL,
-    "campaignId" TEXT REFERENCES campaigns(id) ON DELETE SET NULL
+    "campaignId" TEXT REFERENCES campaigns(id) ON DELETE SET NULL,
+    "taskId" TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+    "pollOptions" TEXT[],
+    invitees TEXT[],
+    description TEXT
 );
 
 -- CreateTable: DashboardTab
@@ -338,6 +366,7 @@ CREATE INDEX "tasks_id_idx" ON tasks(id);
 CREATE INDEX "transactions_id_idx" ON transactions(id);
 CREATE INDEX "events_id_idx" ON events(id);
 CREATE INDEX "contentPieces_id_idx" ON "contentPieces"(id);
+CREATE INDEX "timeEntries_id_idx" ON "timeEntries"(id);
 CREATE INDEX "notifications_id_idx" ON notifications(id);
 CREATE INDEX "dashboardTabs_id_idx" ON "dashboardTabs"(id);
 CREATE INDEX "userPreferences_userName_idx" ON "userPreferences"("userName");

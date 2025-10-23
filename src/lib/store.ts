@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { supabaseCrudService, fetchData } from '../services/supabaseCrudService';
 import {
-  Influencer, Brand, Contract, Campaign, Task, Transaction, Event,
-  ContentPiece, Invoice, UserPreferences, Notification, DashboardTab,
-  DashboardLayoutItem, DashboardTemplate, ContractTemplate, DisplayChatMessage,
-  ContentComment, CommunicationLogItem, InboxMessage, CustomReport, ManualAttribution, TeamMember,
-} from '../types';
+   Influencer, Brand, Contract, Campaign, Task, Transaction, Event,
+   ContentPiece, Invoice, UserPreferences, Notification, DashboardTab,
+   DashboardLayoutItem, DashboardTemplate, ContractTemplate, DisplayChatMessage,
+   ContentComment, CommunicationLogItem, InboxMessage, CustomReport, ManualAttribution, TeamMember,
+   TimeEntry,
+ } from '../types';
 
 import { PREMADE_TEMPLATES } from '../data/templates';
 
@@ -88,38 +89,40 @@ const initialPrefs = safeGetPreferences();
 const initialNotifications = safeGetNotifications();
 
 interface StoreState {
-  // Supabase Data
-  supabaseInfluencers: Influencer[];
-  supabaseBrands: Brand[];
-  supabaseContracts: Contract[];
-  supabaseCampaigns: Campaign[];
-  supabaseTasks: Task[];
-  supabaseTransactions: Transaction[];
-  supabaseEvents: Event[];
-  supabaseContentPieces: ContentPiece[];
-  supabaseInvoices: Invoice[];
-  supabaseContractTemplates: ContractTemplate[];
+   // Supabase Data
+   supabaseInfluencers: Influencer[];
+   supabaseBrands: Brand[];
+   supabaseContracts: Contract[];
+   supabaseCampaigns: Campaign[];
+   supabaseTasks: Task[];
+   supabaseTransactions: Transaction[];
+   supabaseEvents: Event[];
+   supabaseContentPieces: ContentPiece[];
+   supabaseInvoices: Invoice[];
+   supabaseContractTemplates: ContractTemplate[];
+   supabaseTimeEntries: TimeEntry[];
 
-  // Supabase UI State
-  supabaseLoading: boolean;
-  supabaseError: string | null;
+   // Supabase UI State
+   supabaseLoading: boolean;
+   supabaseError: string | null;
 
-  // Data
-    influencers: Influencer[];
-  brands: Brand[];
-  contracts: Contract[];
-  campaigns: Campaign[];
-  tasks: Task[];
-  transactions: Transaction[];
-  events: Event[];
-  contentPieces: ContentPiece[];
-  invoices: Invoice[];
-  contractTemplates: ContractTemplate[];
-  teamMembers: TeamMember[];
-  messages: InboxMessage[];
-  selectedMessageId: string | null;
-  customReports: CustomReport[];
-  dashboardTemplates: DashboardTemplate[];
+   // Data
+     influencers: Influencer[];
+   brands: Brand[];
+   contracts: Contract[];
+   campaigns: Campaign[];
+   tasks: Task[];
+   transactions: Transaction[];
+   events: Event[];
+   contentPieces: ContentPiece[];
+   invoices: Invoice[];
+   contractTemplates: ContractTemplate[];
+   timeEntries: TimeEntry[];
+   teamMembers: TeamMember[];
+   messages: InboxMessage[];
+   selectedMessageId: string | null;
+   customReports: CustomReport[];
+   dashboardTemplates: DashboardTemplate[];
 
   // User & Agency Preferences
    userName: string;
@@ -192,6 +195,13 @@ interface StoreActions {
 
   logInfluencerInteraction: (influencerId: string, log: Omit<CommunicationLogItem, 'id'>) => void;
 
+  // Time Tracking
+  startTimeEntry: (taskId?: string, description?: string) => void;
+  stopTimeEntry: (id: string) => void;
+  addTimeEntry: (entry: Omit<TimeEntry, 'id'>) => void;
+  updateTimeEntry: (id: string, updates: Partial<TimeEntry>) => void;
+  deleteTimeEntry: (id: string) => void;
+
   // New comprehensive tool actions (mocked for now)
   findInfluencers: (criteria: unknown) => Promise<Influencer[]>;
   vetInfluencerProfile: (url: string) => Promise<unknown>;
@@ -251,22 +261,23 @@ interface StoreActions {
 type Store = StoreState & StoreActions;
 
 const useStore = create<Store>((set, get) => ({
-    // --- INITIAL STATE ---
-        influencers: [],
-  brands: [],
-  contracts: [],
-  campaigns: [],
-  tasks: [],
-  transactions: [],
-  events: [],
-  contentPieces: [],
-  invoices: [],
-  contractTemplates: [],
-  teamMembers: [],
-  messages: [],
-  selectedMessageId: null,
-  customReports: [],
-    dashboardTemplates: PREMADE_TEMPLATES,
+     // --- INITIAL STATE ---
+         influencers: [],
+   brands: [],
+   contracts: [],
+   campaigns: [],
+   tasks: [],
+   transactions: [],
+   events: [],
+   contentPieces: [],
+   invoices: [],
+   contractTemplates: [],
+   timeEntries: [],
+   teamMembers: [],
+   messages: [],
+   selectedMessageId: null,
+   customReports: [],
+     dashboardTemplates: PREMADE_TEMPLATES,
 
     userName: initialPrefs.userName,
     userRole: initialPrefs.userRole || 'Agency Director',
@@ -302,6 +313,7 @@ const useStore = create<Store>((set, get) => ({
   supabaseContentPieces: [],
   supabaseInvoices: [],
   supabaseContractTemplates: [],
+  supabaseTimeEntries: [],
 
   // Supabase UI State Initial State
   supabaseLoading: false,
@@ -520,6 +532,42 @@ const useStore = create<Store>((set, get) => ({
         supabaseInfluencers: state.supabaseInfluencers.map(inf =>
             inf.id === influencerId ? { ...inf, communicationLog: [...(inf.communicationLog || []), { ...log, id: generateId(), timestamp: new Date().toISOString() }] } : inf
         )
+    })),
+
+    // Time Tracking Actions
+    startTimeEntry: (taskId, description) => set(state => {
+        const newEntry: TimeEntry = {
+            id: generateId(),
+            taskId,
+            description: description || 'Manual entry',
+            startTime: new Date().toISOString(),
+            date: new Date().toISOString().split('T')[0],
+        };
+        return { timeEntries: [...state.timeEntries, newEntry] };
+    }),
+
+    stopTimeEntry: (id) => set(state => ({
+        timeEntries: state.timeEntries.map(entry =>
+            entry.id === id && !entry.endTime
+                ? {
+                    ...entry,
+                    endTime: new Date().toISOString(),
+                    duration: Math.round((new Date().getTime() - new Date(entry.startTime).getTime()) / 60000)
+                }
+                : entry
+        )
+    })),
+
+    addTimeEntry: (entry) => set(state => ({
+        timeEntries: [...state.timeEntries, { ...entry, id: generateId() }]
+    })),
+
+    updateTimeEntry: (id, updates) => set(state => ({
+        timeEntries: state.timeEntries.map(entry => entry.id === id ? { ...entry, ...updates } : entry)
+    })),
+
+    deleteTimeEntry: (id) => set(state => ({
+        timeEntries: state.timeEntries.filter(entry => entry.id !== id)
     })),
 
     // New comprehensive tool actions (mocked for now)
@@ -902,6 +950,9 @@ const useStore = create<Store>((set, get) => ({
             case 'transactions':
                 data = await fetchData('transactions') as Transaction[] || [];
                 break;
+            case 'time_entries':
+                data = await fetchData('time_entries') as TimeEntry[] || [];
+                break;
             default:
                 throw new Error(`Unknown table name: ${tableName}`);
         }
@@ -920,7 +971,7 @@ const useStore = create<Store>((set, get) => ({
   // You might want to move this to a dedicated data loading component or hook
   // depending on your application's data loading strategy.
   (async () => {
-    const [influencers, brands, contracts, campaigns, tasks, transactions, events, content_pieces, invoices, contract_templates] = await Promise.all([
+    const [influencers, brands, contracts, campaigns, tasks, transactions, events, content_pieces, invoices, contract_templates, time_entries] = await Promise.all([
       supabaseCrudService.fetchInfluencers(),
       supabaseCrudService.fetchBrands(),
       supabaseCrudService.fetchContracts(),
@@ -931,6 +982,7 @@ const useStore = create<Store>((set, get) => ({
       supabaseCrudService.fetchContentPieces(),
       supabaseCrudService.fetchInvoices(),
       supabaseCrudService.fetchContractTemplates(),
+      fetchData('time_entries'),
     ]);
 
     // Initialize with fetched data
@@ -945,6 +997,7 @@ const useStore = create<Store>((set, get) => ({
       supabaseContentPieces: content_pieces || [],
       supabaseInvoices: invoices || [],
       supabaseContractTemplates: contract_templates || [],
+      supabaseTimeEntries: (time_entries as TimeEntry[]) || [],
     });
   })();
 
