@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import useStore from '../../hooks/useStore';
 import { TrendingUp, Users, Target, DollarSign, Download, Building2, Calendar, Filter, BarChart3 } from 'lucide-react';
 import { ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import Image from 'next/image';
-import { CustomReportManager } from '../../components/analytics/CustomReportManager';
+import CustomReportManager from '../../components/analytics/CustomReportManager';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
+import { getInfluencerOSAssistantBriefing } from '../../services/aiService';
 
 
 type TimeRange = '7d' | '30d' | '90d' | '1y';
@@ -15,6 +16,24 @@ const AnalyticsPage: React.FC = () => {
     const { campaigns, influencers, transactions, getBrand } = useStore();
     const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
     const [activeView, setActiveView] = useState<'overview' | 'reports' | 'scheduling'>('overview');
+    const [aiInsights, setAiInsights] = useState<string>('');
+    const [loadingInsights, setLoadingInsights] = useState(false);
+
+    useEffect(() => {
+        const fetchAIInsights = async () => {
+            setLoadingInsights(true);
+            try {
+                const briefing = await getInfluencerOSAssistantBriefing();
+                setAiInsights(briefing);
+            } catch (error) {
+                console.error('Error fetching AI insights:', error);
+                setAiInsights('AI insights unavailable at the moment.');
+            }
+            setLoadingInsights(false);
+        };
+
+        fetchAIInsights();
+    }, []);
     
 
     const { analyticsData, chartData } = useMemo(() => {
@@ -353,38 +372,47 @@ const AnalyticsPage: React.FC = () => {
                 </div>
             </div>
 
-                    {/* Summary Insights */}
+                    {/* AI-Powered Insights */}
                     <div className="bg-gradient-to-r from-brand-primary/10 to-brand-insight/10 rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-brand-text-primary mb-4">Key Insights</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-brand-bg/50 rounded-lg p-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <TrendingUp className="w-5 h-5 text-brand-success" />
-                                    <span className="font-medium text-brand-text-primary">Revenue Growth</span>
-                                </div>
-                                <p className="text-sm text-brand-text-secondary">
-                                    Revenue has increased by 15.3% compared to the previous period, with consistent growth across all major clients.
-                                </p>
+                        <h3 className="text-lg font-semibold text-brand-text-primary mb-4">AI-Powered Insights</h3>
+                        {loadingInsights ? (
+                            <div className="text-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto mb-4"></div>
+                                <p className="text-brand-text-secondary">Generating AI insights...</p>
                             </div>
-                            <div className="bg-brand-bg/50 rounded-lg p-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Users className="w-5 h-5 text-brand-primary" />
-                                    <span className="font-medium text-brand-text-primary">Influencer Performance</span>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="bg-brand-bg/50 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Target className="w-5 h-5 text-brand-primary" />
+                                        <span className="font-medium text-brand-text-primary">AI Analysis</span>
+                                    </div>
+                                    <p className="text-sm text-brand-text-secondary">
+                                        {aiInsights}
+                                    </p>
                                 </div>
-                                <p className="text-sm text-brand-text-secondary">
-                                    Top 20% of influencers are generating 80% of engagement, indicating effective talent selection.
-                                </p>
-                            </div>
-                            <div className="bg-brand-bg/50 rounded-lg p-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Target className="w-5 h-5 text-brand-warning" />
-                                    <span className="font-medium text-brand-text-primary">Campaign Efficiency</span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-brand-bg/50 rounded-lg p-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <TrendingUp className="w-5 h-5 text-brand-success" />
+                                            <span className="font-medium text-brand-text-primary">Revenue Growth</span>
+                                        </div>
+                                        <p className="text-sm text-brand-text-secondary">
+                                            Revenue has increased by 15.3% compared to the previous period, with consistent growth across all major clients.
+                                        </p>
+                                    </div>
+                                    <div className="bg-brand-bg/50 rounded-lg p-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Users className="w-5 h-5 text-brand-primary" />
+                                            <span className="font-medium text-brand-text-primary">Influencer Performance</span>
+                                        </div>
+                                        <p className="text-sm text-brand-text-secondary">
+                                            Average campaign ROI is {analyticsData.avgROI.toFixed(1)}%, exceeding industry benchmarks by 23%.
+                                        </p>
+                                    </div>
                                 </div>
-                                <p className="text-sm text-brand-text-secondary">
-                                    Average campaign ROI is {analyticsData.avgROI.toFixed(1)}%, exceeding industry benchmarks by 23%.
-                                </p>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </TabsContent>
 
