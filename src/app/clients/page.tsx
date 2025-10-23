@@ -5,21 +5,27 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import useStore from '../../hooks/useStore';
 import InfluencerCard from '../../components/InfluencerCard';
 import BrandCard from '../../components/BrandCard';
-import { Plus, Search, Download, LayoutGrid, KanbanSquare, Rows } from 'lucide-react';
+import { Plus, Search, Download, LayoutGrid, KanbanSquare, Rows, Workflow } from 'lucide-react';
 import { exportToCsv } from '../../services/downloadUtils';
-import { Influencer } from '../../types';
+import { Influencer, Brand } from '../../types';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import EmptyState from '../../components/EmptyState';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { NewClientModal } from '../../components/CreationModals';
+import { KanbanBoard } from '../../components/shared';
 
-type ViewMode = 'grid' | 'board' | 'table';
+type ViewMode = 'grid' | 'kanban' | 'board' | 'table';
 
 const ViewSwitcher: React.FC<{ activeView: ViewMode, setActiveView: (view: ViewMode) => void }> = ({ activeView, setActiveView }) => {
     return (
         <div className="flex items-center gap-1 p-1 bg-brand-bg rounded-full border border-brand-border">
-            {(['grid', 'board', 'table'] as const).map(view => {
-                const icons = { grid: <LayoutGrid />, board: <KanbanSquare />, table: <Rows /> };
+            {(['grid', 'kanban', 'board', 'table'] as const).map(view => {
+                const icons = {
+                    grid: <LayoutGrid />,
+                    kanban: <Workflow />,
+                    board: <KanbanSquare />,
+                    table: <Rows />
+                };
                 return (
                     <button
                         key={view}
@@ -69,7 +75,7 @@ const InfluencerTable: React.FC<{ influencers: Influencer[] }> = ({ influencers 
 };
 
 export default function ClientsPage() {
-  const { brands, influencers, deleteInfluencer, deleteBrand } = useStore();
+  const { brands, influencers, deleteInfluencer, deleteBrand, updateInfluencerStatus } = useStore();
   const [activeTab, setActiveTab] = useState<'clients' | 'influencers'>('clients');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -83,6 +89,15 @@ export default function ClientsPage() {
 
   const handleDeleteBrand = (brandId: string) => {
     deleteBrand(brandId);
+  };
+
+  const handleItemMove = (itemId: string, newStage: string) => {
+    if (activeTab === 'influencers') {
+      updateInfluencerStatus(itemId, newStage as Influencer['status']);
+    } else {
+      // TODO: Add updateBrandLeadStage action
+      console.log(`Moving brand ${itemId} to ${newStage}`);
+    }
   };
 
   const filteredInfluencers = useMemo(() =>
@@ -125,32 +140,45 @@ export default function ClientsPage() {
     }
 
     switch(viewMode) {
-      case 'table':
-        return activeTab === 'influencers'
-          ? <InfluencerTable influencers={filteredInfluencers} />
-          : <p className="text-brand-text-secondary text-center py-10">Table view coming soon for clients.</p>;
-      case 'board':
-        return activeTab === 'influencers'
-          ? <p className="text-brand-text-secondary text-center py-10">Board view available for influencers only.</p>
-          : <p className="text-brand-text-secondary text-center py-10">Board view is available for influencers only.</p>;
-      case 'grid':
-      default:
-        return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {activeTab === 'influencers'
-              ? filteredInfluencers.map(influencer => <InfluencerCard key={influencer.id} influencer={influencer} />)
-              : filteredBrands.map(brand => (
-                  <BrandCard
-                    key={brand.id}
-                    brand={brand}
-                    onEdit={handleEditBrand}
-                    onDelete={handleDeleteBrand}
-                  />
-                ))
-            }
-          </div>
-        );
-    }
+       case 'table':
+         return activeTab === 'influencers'
+           ? <InfluencerTable influencers={filteredInfluencers} />
+           : <p className="text-brand-text-secondary text-center py-10">Table view coming soon for clients.</p>;
+       case 'kanban':
+         if (activeTab === 'influencers') {
+           const stages = ['new', 'qualified', 'proposal', 'negotiation', 'closed-won', 'closed-lost'];
+           return (
+             <KanbanBoard
+               items={data}
+               stages={stages}
+               onItemMove={handleItemMove}
+             />
+           );
+         } else {
+           return <p className="text-brand-text-secondary text-center py-10">Kanban view available for influencers only.</p>;
+         }
+       case 'board':
+         return activeTab === 'influencers'
+           ? <p className="text-brand-text-secondary text-center py-10">Board view available for influencers only.</p>
+           : <p className="text-brand-text-secondary text-center py-10">Board view is available for influencers only.</p>;
+       case 'grid':
+       default:
+         return (
+           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+             {activeTab === 'influencers'
+               ? filteredInfluencers.map(influencer => <InfluencerCard key={influencer.id} influencer={influencer} />)
+               : filteredBrands.map(brand => (
+                   <BrandCard
+                     key={brand.id}
+                     brand={brand}
+                     onEdit={handleEditBrand}
+                     onDelete={handleDeleteBrand}
+                   />
+                 ))
+             }
+           </div>
+         );
+     }
   };
 
   const getStatsForTab = () => {

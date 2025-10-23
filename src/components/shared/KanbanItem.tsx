@@ -37,6 +37,9 @@ const KanbanItem: React.FC<KanbanItemProps> = ({ item }) => {
       <div className="text-sm text-gray-600">
         {'platform' in item ? (item as Influencer).platform : (item as Brand).industry}
       </div>
+      <div className="text-xs text-gray-500 mt-1">
+        {'status' in item ? `Status: ${item.status}` : ''}
+      </div>
     </div>
   );
 };

@@ -39,8 +39,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ items, stages, onItemMove }) 
             <KanbanColumn
               key={stage}
               id={stage}
-              title={stage}
-              items={items.filter(item => (item as any).leadStage === stage || (stage === 'new' && !(item as any).leadStage))}
+              title={stage.charAt(0).toUpperCase() + stage.slice(1)}
+              items={items.filter(item => 'status' in item && (item.status === stage || (stage === 'new' && item.status === 'lead')))}
             />
           ))}
         </div>

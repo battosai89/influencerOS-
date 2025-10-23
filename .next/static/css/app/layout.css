@@ -1208,6 +1208,9 @@ body {
 .h-64 {
   height: 16rem;
 }
+.h-7 {
+  height: 1.75rem;
+}
 .h-8 {
   height: 2rem;
 }
@@ -1240,9 +1243,6 @@ body {
 }
 .h-screen {
   height: 100vh;
-}
-.h-7 {
-  height: 1.75rem;
 }
 .max-h-0 {
   max-height: 0px;
@@ -1285,6 +1285,9 @@ body {
 }
 .min-h-0 {
   min-height: 0px;
+}
+.min-h-96 {
+  min-height: 24rem;
 }
 .min-h-\[120px\] {
   min-height: 120px;
@@ -2345,6 +2348,9 @@ body {
 .bg-muted {
   background-color: hsl(var(--muted));
 }
+.bg-muted\/50 {
+  background-color: hsl(var(--muted) / 0.5);
+}
 .bg-orange-100 {
   --tw-bg-opacity: 1;
   background-color: rgb(255 237 213 / var(--tw-bg-opacity, 1));
@@ -2447,9 +2453,6 @@ body {
 }
 .bg-yellow-500\/20 {
   background-color: rgb(234 179 8 / 0.2);
-}
-.bg-muted\/50 {
-  background-color: hsl(var(--muted) / 0.5);
 }
 .bg-opacity-20 {
   --tw-bg-opacity: 0.2;
@@ -2620,6 +2623,9 @@ body {
   -o-object-fit: cover;
      object-fit: cover;
 }
+.p-0 {
+  padding: 0px;
+}
 .p-0\.5 {
   padding: 0.125rem;
 }
@@ -2655,9 +2661,6 @@ body {
 }
 .p-\[1px\] {
   padding: 1px;
-}
-.p-0 {
-  padding: 0px;
 }
 .px-1 {
   padding-left: 0.25rem;
@@ -2757,6 +2760,9 @@ body {
 .pb-2 {
   padding-bottom: 0.5rem;
 }
+.pb-3 {
+  padding-bottom: 0.75rem;
+}
 .pb-4 {
   padding-bottom: 1rem;
 }
@@ -2825,9 +2831,6 @@ body {
 }
 .pt-\[15vh\] {
   padding-top: 15vh;
-}
-.pb-3 {
-  padding-bottom: 0.75rem;
 }
 .text-left {
   text-align: left;
@@ -3300,6 +3303,10 @@ body {
 }
 .blur-3xl {
   --tw-blur: blur(64px);
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+.invert {
+  --tw-invert: invert(100%);
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 .filter {
@@ -3883,6 +3890,13 @@ button, a, [role="button"], input, select, textarea {
 
 
 
+.hover\:bg-green-600:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(22 163 74 / var(--tw-bg-opacity, 1));
+}
+
+
+
 .hover\:bg-green-700:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(21 128 61 / var(--tw-bg-opacity, 1));
@@ -4019,6 +4033,12 @@ button, a, [role="button"], input, select, textarea {
 
 
 
+.hover\:text-destructive:hover {
+  color: hsl(var(--destructive));
+}
+
+
+
 .hover\:text-foreground:hover {
   color: hsl(var(--foreground));
 }
@@ -4028,6 +4048,12 @@ button, a, [role="button"], input, select, textarea {
 .hover\:text-gray-800:hover {
   --tw-text-opacity: 1;
   color: rgb(31 41 55 / var(--tw-text-opacity, 1));
+}
+
+
+
+.hover\:text-primary:hover {
+  color: hsl(var(--primary));
 }
 
 
@@ -4063,18 +4089,6 @@ button, a, [role="button"], input, select, textarea {
 .hover\:text-white:hover {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
-}
-
-
-
-.hover\:text-destructive:hover {
-  color: hsl(var(--destructive));
-}
-
-
-
-.hover\:text-primary:hover {
-  color: hsl(var(--primary));
 }
 
 

@@ -1,7 +1,5 @@
 {
-  "/inbox/page": "app/inbox/page.js",
-  "/contracts/page": "app/contracts/page.js",
-  "/financials/page": "app/financials/page.js",
-  "/invoices/page": "app/invoices/page.js",
+  "/campaigns/page": "app/campaigns/page.js",
+  "/tasks/page": "app/tasks/page.js",
   "/dashboard/page": "app/dashboard/page.js"
 }
