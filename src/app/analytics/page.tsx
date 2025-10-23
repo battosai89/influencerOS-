@@ -2,9 +2,11 @@
 
 import { useState, useMemo } from 'react';
 import useStore from '../../hooks/useStore';
-import { TrendingUp, Users, Target, DollarSign, Download, Building2 } from 'lucide-react';;
+import { TrendingUp, Users, Target, DollarSign, Download, Building2, Calendar, Filter, BarChart3 } from 'lucide-react';
 import { ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import Image from 'next/image';
+import { CustomReportManager } from '../../components/analytics/CustomReportManager';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 
 
 type TimeRange = '7d' | '30d' | '90d' | '1y';
@@ -12,6 +14,7 @@ type TimeRange = '7d' | '30d' | '90d' | '1y';
 const AnalyticsPage: React.FC = () => {
     const { campaigns, influencers, transactions, getBrand } = useStore();
     const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+    const [activeView, setActiveView] = useState<'overview' | 'reports' | 'scheduling'>('overview');
     
 
     const { analyticsData, chartData } = useMemo(() => {
@@ -135,8 +138,23 @@ const AnalyticsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Metric Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Analytics Tabs */}
+            <Tabs value={activeView} onValueChange={(value) => setActiveView(value as typeof activeView)} className="space-y-6">
+                <TabsList className="grid w-fit grid-cols-3 bg-brand-bg border border-brand-border">
+                    <TabsTrigger value="overview" className="px-6">
+                        Overview
+                    </TabsTrigger>
+                    <TabsTrigger value="reports" className="px-6">
+                        Custom Reports
+                    </TabsTrigger>
+                    <TabsTrigger value="scheduling" className="px-6">
+                        Scheduling
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="space-y-6">
+                    {/* Metric Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
                     title="Total Revenue"
                     value={formatCurrency(analyticsData.totalRevenue)}
@@ -335,39 +353,68 @@ const AnalyticsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Summary Insights */}
-            <div className="bg-gradient-to-r from-brand-primary/10 to-brand-insight/10 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-brand-text-primary mb-4">Key Insights</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-brand-bg/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <TrendingUp className="w-5 h-5 text-brand-success" />
-                            <span className="font-medium text-brand-text-primary">Revenue Growth</span>
+                    {/* Summary Insights */}
+                    <div className="bg-gradient-to-r from-brand-primary/10 to-brand-insight/10 rounded-xl p-6">
+                        <h3 className="text-lg font-semibold text-brand-text-primary mb-4">Key Insights</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-brand-bg/50 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <TrendingUp className="w-5 h-5 text-brand-success" />
+                                    <span className="font-medium text-brand-text-primary">Revenue Growth</span>
+                                </div>
+                                <p className="text-sm text-brand-text-secondary">
+                                    Revenue has increased by 15.3% compared to the previous period, with consistent growth across all major clients.
+                                </p>
+                            </div>
+                            <div className="bg-brand-bg/50 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Users className="w-5 h-5 text-brand-primary" />
+                                    <span className="font-medium text-brand-text-primary">Influencer Performance</span>
+                                </div>
+                                <p className="text-sm text-brand-text-secondary">
+                                    Top 20% of influencers are generating 80% of engagement, indicating effective talent selection.
+                                </p>
+                            </div>
+                            <div className="bg-brand-bg/50 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Target className="w-5 h-5 text-brand-warning" />
+                                    <span className="font-medium text-brand-text-primary">Campaign Efficiency</span>
+                                </div>
+                                <p className="text-sm text-brand-text-secondary">
+                                    Average campaign ROI is {analyticsData.avgROI.toFixed(1)}%, exceeding industry benchmarks by 23%.
+                                </p>
+                            </div>
                         </div>
-                        <p className="text-sm text-brand-text-secondary">
-                            Revenue has increased by 15.3% compared to the previous period, with consistent growth across all major clients.
-                        </p>
                     </div>
-                    <div className="bg-brand-bg/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Users className="w-5 h-5 text-brand-primary" />
-                            <span className="font-medium text-brand-text-primary">Influencer Performance</span>
+                </TabsContent>
+
+                <TabsContent value="reports" className="space-y-6">
+                    <CustomReportManager />
+                </TabsContent>
+
+                <TabsContent value="scheduling" className="space-y-6">
+                    <div className="bg-brand-surface futuristic-border rounded-xl p-6">
+                        <h3 className="text-lg font-semibold text-brand-text-primary mb-4">Advanced Scheduling</h3>
+                        <p className="text-brand-text-secondary mb-4">
+                            Enhanced calendar features with polling, invites, and Gantt integration coming soon.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <h4 className="font-medium text-brand-text-primary">Event Polling</h4>
+                                <p className="text-sm text-brand-text-secondary">
+                                    Create polls for optimal meeting times with automatic suggestions.
+                                </p>
+                            </div>
+                            <div className="space-y-4">
+                                <h4 className="font-medium text-brand-text-primary">Task Milestones</h4>
+                                <p className="text-sm text-brand-text-secondary">
+                                    Sync campaign milestones with calendar events and task dependencies.
+                                </p>
+                            </div>
                         </div>
-                        <p className="text-sm text-brand-text-secondary">
-                            Top 20% of influencers are generating 80% of engagement, indicating effective talent selection.
-                        </p>
                     </div>
-                    <div className="bg-brand-bg/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Target className="w-5 h-5 text-brand-warning" />
-                            <span className="font-medium text-brand-text-primary">Campaign Efficiency</span>
-                        </div>
-                        <p className="text-sm text-brand-text-secondary">
-                            Average campaign ROI is {analyticsData.avgROI.toFixed(1)}%, exceeding industry benchmarks by 23%.
-                        </p>
-                    </div>
-                </div>
-            </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };

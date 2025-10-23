@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import useStore from '../../hooks/useStore';
-import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, Clock, Users, Target } from 'lucide-react';
 import { NewEventModal } from '../../components/CreationModals';
 
 const CalendarPage = () => {
@@ -321,6 +321,39 @@ const CalendarPage = () => {
                                 <span className="text-brand-text-secondary">Total Events</span>
                                 <span className="font-semibold text-brand-text-primary">{events.length}</span>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Advanced Scheduling */}
+                    <div className="bg-brand-surface futuristic-border rounded-xl p-6">
+                        <h3 className="text-lg font-semibold text-brand-text-primary mb-4">Advanced Scheduling</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 p-3 bg-brand-bg rounded-lg">
+                                <Users className="w-5 h-5 text-brand-primary" />
+                                <div>
+                                    <h4 className="font-medium text-brand-text-primary text-sm">Event Polling</h4>
+                                    <p className="text-xs text-brand-text-secondary">Find optimal meeting times</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-brand-bg rounded-lg">
+                                <Target className="w-5 h-5 text-brand-success" />
+                                <div>
+                                    <h4 className="font-medium text-brand-text-primary text-sm">Gantt Integration</h4>
+                                    <p className="text-xs text-brand-text-secondary">Sync with task milestones</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-brand-bg rounded-lg">
+                                <Clock className="w-5 h-5 text-brand-warning" />
+                                <div>
+                                    <h4 className="font-medium text-brand-text-primary text-sm">Smart Reminders</h4>
+                                    <p className="text-xs text-brand-text-secondary">AI-powered notifications</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-4">
+                            <button className="w-full px-3 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-accent transition-colors text-sm">
+                                Create Poll
+                            </button>
                         </div>
                     </div>
                 </div>
