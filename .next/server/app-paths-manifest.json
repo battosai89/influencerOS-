@@ -1,7 +1,7 @@
 {
-  "/academy/page": "app/academy/page.js",
+  "/inbox/page": "app/inbox/page.js",
   "/contracts/page": "app/contracts/page.js",
-  "/clients/page": "app/clients/page.js",
-  "/content-hub/page": "app/content-hub/page.js",
+  "/financials/page": "app/financials/page.js",
+  "/invoices/page": "app/invoices/page.js",
   "/dashboard/page": "app/dashboard/page.js"
 }

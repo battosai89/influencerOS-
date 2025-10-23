@@ -4,13 +4,18 @@ import * as React from 'react';
 import { useState } from 'react';
 import useStore from '@/hooks/useStore';
 import { Plus, CheckCircle, Circle, Calendar, Flag, Filter } from 'lucide-react';
+import { TaskModal } from '@/components/CreationModals';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import notificationService from '@/services/notificationService';
 
 const Tasks: React.FC = () => {
-    const { tasks, updateTask, deleteTask } = useStore();
+    const { tasks, updateTask, deleteTask, addTask, supabaseTasks } = useStore();
     const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
-    const filteredTasks = tasks.filter(task => {
+    const filteredTasks = supabaseTasks.filter(task => {
         const matchesFilter = filter === 'all' || 
             (filter === 'pending' && task.status === 'pending') ||
             (filter === 'completed' && task.status === 'completed');
@@ -19,25 +24,29 @@ const Tasks: React.FC = () => {
     });
 
     const handleToggleComplete = (taskId: string) => {
-        const task = tasks.find(t => t.id === taskId);
+        const task = supabaseTasks.find(t => t.id === taskId);
         if (task) {
             updateTask(taskId, { status: task.status === 'completed' ? 'pending' : 'completed' });
         }
     };
 
     const handleDelete = (taskId: string) => {
-        if (confirm('Are you sure you want to delete this task?')) {
-            deleteTask(taskId);
+        setTaskToDelete(taskId);
+    };
+
+    const handleConfirmDelete = () => {
+        if (taskToDelete) {
+            deleteTask(taskToDelete);
+            setTaskToDelete(null);
         }
     };
 
     const handleCreateTask = () => {
-        // TODO: Implement task creation modal or redirect to task creation
-        console.log('Create new task');
+        setIsModalOpen(true);
     };
 
-    const completedTasks = tasks.filter(t => t.status === 'completed').length;
-    const totalTasks = tasks.length;
+    const completedTasks = supabaseTasks.filter(t => t.status === 'completed').length;
+    const totalTasks = supabaseTasks.length;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     return (
@@ -205,6 +214,24 @@ const Tasks: React.FC = () => {
                     )}
                 </div>
             )}
+
+            {/* Task Creation Modal */}
+            <TaskModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                taskToEdit={null}
+                parentId={undefined}
+            />
+
+            {/* Task Deletion Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={!!taskToDelete}
+                onClose={() => setTaskToDelete(null)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Task"
+                message="Are you sure you want to delete this task? This action cannot be undone."
+                confirmText="Delete Task"
+            />
         </div>
     );
 };

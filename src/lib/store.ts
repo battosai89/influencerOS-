@@ -4,7 +4,7 @@ import {
   Influencer, Brand, Contract, Campaign, Task, Transaction, Event,
   ContentPiece, Invoice, UserPreferences, Notification, DashboardTab,
   DashboardLayoutItem, DashboardTemplate, ContractTemplate, DisplayChatMessage,
-  ContentComment, CommunicationLogItem,
+  ContentComment, CommunicationLogItem, InboxMessage, CustomReport, ManualAttribution, TeamMember,
 } from '../types';
 
 import { PREMADE_TEMPLATES } from '../data/templates';
@@ -14,6 +14,42 @@ import notificationService from '../services/notificationService';
 
 // Helper to generate IDs
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+
+// Helper to compact layout by removing gaps and reordering widgets
+const compactLayout = (layout: DashboardLayoutItem[]): DashboardLayoutItem[] => {
+    if (layout.length === 0) return layout;
+
+    // Sort widgets by their current Y position
+    const sortedWidgets = [...layout].sort((a, b) => a.y - b.y);
+
+    // Group widgets by column (x position)
+    const columnGroups: { [key: number]: DashboardLayoutItem[] } = {};
+    sortedWidgets.forEach(widget => {
+        if (!columnGroups[widget.x]) {
+            columnGroups[widget.x] = [];
+        }
+        columnGroups[widget.x].push(widget);
+    });
+
+    // Compact each column by reordering widgets to eliminate gaps
+    const compactedLayout: DashboardLayoutItem[] = [];
+    Object.values(columnGroups).forEach(columnWidgets => {
+        // Sort widgets in this column by Y position
+        const sortedColumn = columnWidgets.sort((a, b) => a.y - b.y);
+
+        // Reassign Y positions to be contiguous starting from 0
+        let currentY = 0;
+        sortedColumn.forEach(widget => {
+            compactedLayout.push({
+                ...widget,
+                y: currentY
+            });
+            currentY += widget.h;
+        });
+    });
+
+    return compactedLayout;
+};
 
 // Safe localStorage access for SSR compatibility
 const safeGetPreferences = (): UserPreferences => {
@@ -79,6 +115,10 @@ interface StoreState {
   contentPieces: ContentPiece[];
   invoices: Invoice[];
   contractTemplates: ContractTemplate[];
+  teamMembers: TeamMember[];
+  messages: InboxMessage[];
+  selectedMessageId: string | null;
+  customReports: CustomReport[];
   dashboardTemplates: DashboardTemplate[];
 
   // User & Agency Preferences
@@ -148,6 +188,7 @@ interface StoreActions {
   addContentPiece: (contentPiece: Omit<ContentPiece, 'id' | 'comments' | 'version'>) => void;
   updateContentPieceStatus: (id: string, status: ContentPiece['status']) => void;
   addContentComment: (contentId: string, comment: Omit<ContentComment, 'id'|'timestamp'>) => void;
+  addManualAttribution: (campaignId: string, attributionData: Omit<ManualAttribution, 'id'>) => void;
 
   logInfluencerInteraction: (influencerId: string, log: Omit<CommunicationLogItem, 'id'>) => void;
 
@@ -221,6 +262,10 @@ const useStore = create<Store>((set, get) => ({
   contentPieces: [],
   invoices: [],
   contractTemplates: [],
+  teamMembers: [],
+  messages: [],
+  selectedMessageId: null,
+  customReports: [],
     dashboardTemplates: PREMADE_TEMPLATES,
 
     userName: initialPrefs.userName,
@@ -358,9 +403,21 @@ const useStore = create<Store>((set, get) => ({
     },
 
     addTask: async (task) => {
-      const newTask = await supabaseCrudService.addTask(task);
-      if (newTask) {
-        set((state: StoreState) => ({ supabaseTasks: [...state.supabaseTasks, newTask] }));
+      console.log('Store addTask called with:', task);
+      try {
+        const newTask = await supabaseCrudService.addTask(task);
+        console.log('Supabase addTask returned:', newTask);
+        if (newTask) {
+          set((state: StoreState) => {
+            console.log('Updating state with new task');
+            return { supabaseTasks: [...state.supabaseTasks, newTask] };
+          });
+        } else {
+          console.error('addTask returned null');
+        }
+      } catch (error) {
+        console.error('Error in store addTask:', error);
+        throw error;
       }
     },
     
@@ -431,6 +488,20 @@ const useStore = create<Store>((set, get) => ({
             c.id === contentId
             ? { ...c, comments: [...c.comments, { id: generateId(), timestamp: new Date().toISOString(), ...comment }] }
             : c
+        )
+    })),
+
+    addManualAttribution: (campaignId, attributionData) => set((state: StoreState) => ({
+        supabaseCampaigns: state.supabaseCampaigns.map(campaign =>
+            campaign.id === campaignId
+                ? {
+                    ...campaign,
+                    attributionData: [
+                        ...(campaign.attributionData || []),
+                        { id: generateId(), ...attributionData }
+                    ]
+                }
+                : campaign
         )
     })),
 
@@ -587,6 +658,73 @@ const useStore = create<Store>((set, get) => ({
         return { notifications: [] };
     }),
 
+    // Inbox
+    selectMessage: (messageId: string | null) => set(state => {
+        if (messageId === null) {
+            return { selectedMessageId: null };
+        }
+        const newMessages = state.messages.map(msg =>
+            msg.id === messageId ? { ...msg, isRead: true } : msg
+        );
+        return { messages: newMessages, selectedMessageId: messageId };
+    }),
+    archiveMessage: (messageId: string) => set(state => {
+        const messageToArchive = state.messages.find(m => m.id === messageId);
+        if (!messageToArchive) return {};
+
+        const newMessages = state.messages.map(msg =>
+            msg.id === messageId ? { ...msg, folder: 'Archived' as const } : msg
+        );
+
+        let newSelectedId = state.selectedMessageId;
+        if (state.selectedMessageId === messageId) {
+            const remainingMessagesInFolder = state.messages
+                .filter(m => m.folder === messageToArchive.folder && m.id !== messageId)
+                .sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            newSelectedId = remainingMessagesInFolder[0]?.id || null;
+        }
+
+        return {
+            messages: newMessages,
+            selectedMessageId: newSelectedId,
+        };
+    }),
+
+    // Custom Reports
+    saveCustomReport: (report: Omit<CustomReport, 'id' | 'createdAt'> & { id?: string }) => {
+        let finalReport: CustomReport;
+        let reportId = report.id;
+
+        set(state => {
+            const existingReports = state.customReports;
+            if (report.id) { // Update existing
+                const existing = existingReports.find(r => r.id === report.id);
+                if (existing) {
+                    finalReport = { ...existing, ...report, id: report.id };
+                    const newReports = existingReports.map(r => r.id === report.id ? finalReport! : r);
+                    const newPrefs = { ...initialPrefs, customReports: newReports };
+                    savePreferences(newPrefs);
+                    return { customReports: newReports };
+                }
+            } else { // Create new
+                reportId = generateId();
+                finalReport = { ...report, id: reportId, createdAt: new Date().toISOString() };
+                const newReports = [...existingReports, finalReport];
+                const newPrefs = { ...initialPrefs, customReports: newReports };
+                savePreferences(newPrefs);
+                return { customReports: newReports };
+            }
+            return {};
+        });
+        return reportId!;
+    },
+    deleteCustomReport: (reportId: string) => set(state => {
+        const newReports = state.customReports.filter(r => r.id !== reportId);
+        const newPrefs = { ...initialPrefs, customReports: newReports };
+        savePreferences(newPrefs);
+        return { customReports: newReports };
+    }),
+
     // Dashboard Layout
     setActiveDashboardTab: (tabId) => {
         set({ activeDashboardTabId: tabId });
@@ -613,10 +751,29 @@ const useStore = create<Store>((set, get) => ({
         const activeTab = state.dashboardTabs.find(t => t.id === state.activeDashboardTabId);
         if (!activeTab || activeTab.layout.some(w => w.id === widgetId)) return state;
 
-        // Simple placement logic: find the first available spot
-        const newWidget: DashboardLayoutItem = { id: widgetId, widgetId: widgetId, x: 0, y: 100, w: widgetConfig.defaultSpan, h: 1 };
-        const newLayout = [...activeTab.layout, newWidget];
-        
+        // Compact existing layout to remove gaps and ensure widgets start from Y=0
+        const compactedLayout = compactLayout(activeTab.layout);
+
+        // Calculate the next available Y position at the bottom of all existing widgets
+        let nextY = 0;
+
+        // If there are existing widgets, find the maximum Y position across all columns
+        if (compactedLayout.length > 0) {
+          // Find the maximum Y position across all widgets (considering their height)
+          const maxY = Math.max(...compactedLayout.map(w => w.y + w.h));
+          nextY = maxY;
+        }
+
+        const newWidget: DashboardLayoutItem = {
+            id: widgetId,
+            widgetId: widgetId,
+            x: 0,
+            y: nextY,
+            w: widgetConfig.defaultSpan,
+            h: 1
+        };
+        const newLayout = [...compactedLayout, newWidget];
+
         const newTabs = state.dashboardTabs.map(t => t.id === state.activeDashboardTabId ? { ...t, layout: newLayout } : t);
         get()._savePrefs();
         return { dashboardTabs: newTabs };
@@ -644,22 +801,28 @@ const useStore = create<Store>((set, get) => ({
     applyTemplate: (templateId, mode) => {
         const state = get();
         const template = state.dashboardTemplates.find(t => t.id === templateId);
-        if (!template) return;
+        if (!template) return {};
 
         if (mode === 'new-tab') {
             const newTab: DashboardTab = { id: generateId(), name: template.name, layout: template.layout };
-            set({ dashboardTabs: [...state.dashboardTabs, newTab], activeDashboardTabId: newTab.id });
+            const newTabs = [...state.dashboardTabs, newTab];
+            const newPrefs = { ...initialPrefs, dashboardTabs: newTabs, activeDashboardTabId: newTab.id };
+            savePreferences(newPrefs);
+            return { dashboardTabs: newTabs, activeDashboardTabId: newTab.id };
         } else { // current-tab
-             const currentTab = state.dashboardTabs.find(t => t.id === state.activeDashboardTabId);
-             if(!currentTab) return;
-            const newLayout = template.id === 'blank-dashboard' 
-                ? [] 
-                : [...currentTab.layout, ...template.layout.filter(l => !currentTab.layout.some(el => el.id === l.id))];
-            set({
-                dashboardTabs: state.dashboardTabs.map(t => t.id === state.activeDashboardTabId ? { ...t, layout: newLayout } : t)
+            const newTabs = state.dashboardTabs.map(t => {
+                if (t.id === state.activeDashboardTabId) {
+                    const existingIds = new Set(t.layout.map(w => w.id));
+                    const newWidgets = template.layout.filter(w => !existingIds.has(w.id));
+                    const finalLayout = template.id === 'blank-dashboard' ? [] : [...t.layout, ...newWidgets];
+                    return { ...t, layout: finalLayout };
+                }
+                return t;
             });
+            const newPrefs = { ...initialPrefs, dashboardTabs: newTabs };
+            savePreferences(newPrefs);
+            return { dashboardTabs: newTabs };
         }
-        get()._savePrefs();
     },
 
     // AI Assistant
@@ -707,7 +870,7 @@ const useStore = create<Store>((set, get) => ({
 
     fetchSupabaseData: async (tableName, setStateKey) => {
         set({ supabaseLoading: true, supabaseError: null });
-        let data: any = null;
+        let data: unknown = null;
         switch (tableName) {
             case 'influencers':
                 data = await supabaseCrudService.fetchInfluencers() as Influencer[] || [];

@@ -1,32 +1,17 @@
-// FIX: Implemented the BrandDetail component, which was previously missing.
-// This resolves the "is not a module" error in App.tsx.
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import useStore from '../hooks/useStore';
 import { FilePenLine, Lock, Eye, EyeOff, ExternalLink } from 'lucide-react';
-import Image from 'next/image';
+import Chart from '../components/analytics/Chart';
+import notificationService from '../services/notificationService';
 
-interface ChartData {
-  label: string;
-  value: number;
-}
+// Component implementation from user's enhanced version
 
-// Simple Chart component fallback since Chart component doesn't exist
-const Chart: React.FC<{ type: string; title: string; data: ChartData[] }> = ({ title }) => {
-  return (
-    <div className="bg-brand-bg rounded-lg p-4 h-64 flex items-center justify-center">
-      <p className="text-brand-text-secondary">Chart: {title}</p>
-    </div>
-  );
-};
+// Using the real Chart component from analytics
 
-// Simple notification service fallback
-const notificationService = {
-  show: ({ message, type }: { message: string; type: string }) => {
-    console.log(`[${type.toUpperCase()}] ${message}`);
-  }
-};
+// Using the real notification service from services
 
 const TabButton: React.FC<{ name: string; label: string; activeTab: string; setActiveTab: (name: string) => void; }> = ({ name, label, activeTab, setActiveTab }) => {
     const isActive = activeTab === name;
@@ -127,21 +112,21 @@ const BrandDetail: React.FC = () => {
         { label: 'Q3', value: 180, color: '#DD6B20' },
         { label: 'Q4', value: 250, color: '#D53F8C' },
     ];
-    
-     const renderTabContent = () => {
+
+    const renderTabContent = () => {
         switch (activeTab) {
             case 'portal':
                 return <ClientPortalTab brandId={brand.id} />;
             case 'overview':
             default:
                 return (
-                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-8">
                             <div className="futuristic-border bg-brand-surface rounded-xl p-6">
                                 <h2 className="text-xl font-bold text-brand-text-primary mb-4">Campaign ROI (%)</h2>
                                 <Chart type="bar" title="Quarterly Return on Investment" data={roiData} />
                             </div>
-                             <div className="futuristic-border bg-brand-surface rounded-xl p-6">
+                            <div className="futuristic-border bg-brand-surface rounded-xl p-6">
                                 <h2 className="text-xl font-bold text-brand-text-primary mb-4">Notes</h2>
                                 <p className="text-brand-text-secondary whitespace-pre-wrap">{brand.notes || 'No notes available.'}</p>
                             </div>
@@ -161,7 +146,7 @@ const BrandDetail: React.FC = () => {
                                     )) : <p className="text-brand-text-secondary">No active campaigns.</p>}
                                 </div>
                             </div>
-                             <div className="futuristic-border bg-brand-surface rounded-xl p-6">
+                            <div className="futuristic-border bg-brand-surface rounded-xl p-6">
                                 <h2 className="text-xl font-bold text-brand-text-primary mb-4">Collaborating Influencers</h2>
                                 <div className="space-y-3">
                                     {relatedInfluencers.length > 0 ? relatedInfluencers.map(i => i && (
@@ -178,7 +163,6 @@ const BrandDetail: React.FC = () => {
         }
     };
 
-
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row items-start gap-8 p-6 futuristic-border bg-brand-surface rounded-xl">
@@ -189,7 +173,7 @@ const BrandDetail: React.FC = () => {
                             <h1 className="text-4xl font-bold font-display text-brand-text-primary">{brand.name}</h1>
                             <p className="text-lg text-brand-text-secondary mt-1">{brand.industry}</p>
                         </div>
-                         <button className="flex items-center gap-2 text-brand-text-secondary hover:text-brand-primary transition-colors">
+                        <button className="flex items-center gap-2 text-brand-text-secondary hover:text-brand-primary transition-colors">
                             <FilePenLine className="w-5 h-5"/> Edit
                         </button>
                     </div>
@@ -201,7 +185,7 @@ const BrandDetail: React.FC = () => {
                     )}
                 </div>
             </div>
-            
+
             <div className="border-b border-brand-border flex items-center gap-8">
                 <TabButton name="overview" label="Overview" activeTab={activeTab} setActiveTab={setActiveTab} />
                 <TabButton name="portal" label="Client Portal" activeTab={activeTab} setActiveTab={setActiveTab} />

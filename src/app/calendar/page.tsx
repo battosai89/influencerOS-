@@ -3,15 +3,14 @@
 import { useState, useMemo } from 'react';
 import useStore from '../../hooks/useStore';
 import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { NewEventModal } from '../../components/CreationModals';
 
 const CalendarPage = () => {
     const { events } = useStore();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState<'month' | 'week' | 'day'>('month');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_showAddEvent, setShowAddEvent] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [showAddEvent, setShowAddEvent] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
     const { calendarDays, monthYear, weekDays } = useMemo(() => {
         const year = currentDate.getFullYear();
@@ -69,8 +68,8 @@ const CalendarPage = () => {
         switch (type.toLowerCase()) {
             case 'meeting': return 'bg-blue-500';
             case 'deadline': return 'bg-red-500';
-            case 'campaign': return 'bg-green-500';
-            case 'personal': return 'bg-purple-500';
+            case 'campaign milestone': return 'bg-green-500';
+            case 'appointment': return 'bg-purple-500';
             default: return 'bg-gray-500';
         }
     };
@@ -326,6 +325,13 @@ const CalendarPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Event Creation Modal */}
+            <NewEventModal
+                isOpen={showAddEvent}
+                onClose={() => setShowAddEvent(false)}
+                selectedDate={selectedDate || undefined}
+            />
         </div>
     );
 };

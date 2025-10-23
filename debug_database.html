@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+    <h1>Supabase Database Test</h1>
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message) {
+            output.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+            console.log(message);
+        }
+
+        async function testDatabase() {
+            log('🔍 Starting database tests...');
+
+            try {
+                // Initialize Supabase
+                const supabaseUrl = 'https://pcklimtlipsyckovfmmj.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBja2xpbXRsaXBzeWNrb3ZmbW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzODI4MzcsImV4cCI6MjA3NTk1ODgzN30.mcOqfSZleYQOjVC4UPZY8cP8eGPqoLwdwml3KChOJ40';
+
+                log('🔗 Connecting to Supabase...');
+                const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+                // Test 1: Basic connection
+                log('📡 Testing basic connection...');
+                const { data: testData, error: testError } = await supabase
+                    .from('tasks')
+                    .select('id')
+                    .limit(1);
+
+                if (testError) {
+                    log('❌ TASKS TABLE ISSUE: ' + testError.message);
+                    if (testError.message.includes('relation') && testError.message.includes('does not exist')) {
+                        log('🚨 SOLUTION: The "tasks" table does not exist!');
+                        log('💡 Go to your Supabase dashboard → SQL Editor → Run setup_database.sql');
+                    }
+                } else {
+                    log('✅ Tasks table exists and is accessible');
+                }
+
+                // Test 2: Try to create a test task
+                log('📝 Attempting to create test task...');
+                const testTask = {
+                    id: 'debug_test_' + Date.now(),
+                    title: 'Debug Test Task ' + new Date().toISOString(),
+                    dueDate: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                };
+
+                const { data: newTask, error: insertError } = await supabase
+                    .from('tasks')
+                    .insert(testTask)
+                    .select()
+                    .single();
+
+                if (insertError) {
+                    log('❌ TASK CREATION FAILED: ' + insertError.message);
+                    log('❌ Full error: ' + JSON.stringify(insertError, null, 2));
+                } else {
+                    log('✅ Task created successfully: ' + newTask.id);
+
+                    // Clean up
+                    await supabase.from('tasks').delete().eq('id', testTask.id);
+                    log('🧹 Test task cleaned up');
+                }
+
+                // Test 3: Check available tables
+                log('📋 Checking available tables...');
+                const { data: tables, error: tablesError } = await supabase
+                    .rpc('get_table_info');
+
+                if (tablesError) {
+                    log('⚠️ Could not check tables (RPC not available)');
+                } else {
+                    log('📊 Available tables: ' + tables.map(t => t.table_name).join(', '));
+                }
+
+                log('🎉 Database test completed!');
+
+            } catch (error) {
+                log('💥 CRITICAL ERROR: ' + error.message);
+                log('🔧 Check your Supabase URL and API key in .env.local');
+            }
+        }
+
+        // Run test when page loads
+        testDatabase();
+    </script>
+</body>
+</html>

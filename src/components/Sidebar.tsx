@@ -17,21 +17,27 @@ interface NavItemProps {
 }
 
 const NavItem: React.FC<NavItemProps> = memo(({ to, icon, label, isActive, onClick }) => {
-  return (
-    <Link
-      href={to}
-      onClick={onClick}
-      className={`relative z-10 flex items-center p-3 my-1.5 rounded-lg transition-all duration-300 ease-in-out hover:scale-105 ${
-        isActive
-          ? 'text-white'
-          : 'text-brand-text-secondary hover:bg-brand-surface/50 hover:text-brand-text-primary'
-      }`}
-    >
-      {icon}
-      <span className="ml-4 font-semibold whitespace-nowrap">{label}</span>
-    </Link>
-  );
-});
+   return (
+     <Link
+       href={to}
+       onClick={onClick}
+       className={`relative z-10 flex items-center p-3 my-1.5 rounded-xl transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.02] hover:shadow-lg group overflow-hidden ${
+         isActive
+           ? 'text-white shadow-lg backdrop-blur-sm'
+           : 'text-brand-text-secondary hover:bg-gradient-to-r hover:from-brand-surface/30 hover:to-brand-surface/60 hover:text-brand-text-primary hover:shadow-md'
+       }`}
+     >
+       <div className={`transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 ${isActive ? 'scale-110' : ''}`}>
+         {icon}
+       </div>
+       <span className={`ml-4 font-semibold transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-1 ${isActive ? 'translate-x-1' : ''} text-sm`}>
+         {label}
+       </span>
+       {/* Subtle animated border effect */}
+       <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:translate-x-[100%] ${isActive ? 'animate-pulse' : ''}`} />
+     </Link>
+   );
+ });
 
 NavItem.displayName = 'NavItem';
 
@@ -50,7 +56,7 @@ const navItems = [
   { to: '/invoices', icon: <Receipt className="w-6 h-6" />, label: 'Invoices' },
   { to: '/analytics', icon: <BarChart3 className="w-6 h-6" />, label: 'Analytics' },
   { to: '/academy', icon: <BookOpen className="w-6 h-6" />, label: 'Academy' },
-  { to: '/connectors', icon: <ExternalLink className="w-6 h-6" />, label: 'Connectors' },
+  // { to: '/connectors', icon: <ExternalLink className="w-6 h-6" />, label: 'Connectors' },
 ];
 
 
@@ -61,7 +67,12 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const pathname = usePathname();
-    const [highlightStyle, setHighlightStyle] = useState({ top: 0, height: 0, opacity: 0 });
+    const [highlightStyle, setHighlightStyle] = useState({
+        top: 0,
+        height: 0,
+        opacity: 0,
+        transform: 'scale(1)'
+    });
     const itemsRef = useRef(new Map<string, HTMLLIElement | null>());
     const navRef = useRef<HTMLElement>(null);
     
@@ -78,15 +89,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     useEffect(() => {
         const activeItem = itemsRef.current.get(pathname);
         if (activeItem) {
-            setHighlightStyle({
-                top: activeItem.offsetTop,
-                height: activeItem.offsetHeight,
-                opacity: 1
+            // Enhanced animation with staggered timing for smooth liquid effect
+            requestAnimationFrame(() => {
+                setHighlightStyle({
+                    top: activeItem.offsetTop,
+                    height: activeItem.offsetHeight,
+                    opacity: 1,
+                    transform: 'scale(1.02)' // Subtle scale for liquid feel
+                });
+
+                // Reset scale after animation for performance
+                setTimeout(() => {
+                    setHighlightStyle(prev => ({ ...prev, transform: 'scale(1)' }));
+                }, 400);
             });
         } else {
-             setHighlightStyle(prev => ({ ...prev, opacity: 0 }));
+            setHighlightStyle(prev => ({
+                ...prev,
+                opacity: 0,
+                transform: 'scale(0.95)' // Collapse effect when hiding
+            }));
         }
-    }, [pathname]); // Dependency array simplified for stability
+    }, [pathname]); // Optimized dependency array
 
   return (
     <>
@@ -100,9 +124,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-brand-bg flex flex-col transition-all duration-300 ease-in-out z-40 w-72 p-6 animate-page-enter ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0`}
+        className={`fixed top-0 left-0 h-full bg-gradient-to-br from-purple-900/20 via-brand-bg to-purple-800/30 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-40 w-72 p-6 animate-page-enter backdrop-blur-sm border-r border-purple-500/20 shadow-2xl ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full shadow-none'
+        } md:translate-x-0 md:shadow-xl`}
+        style={{
+          background: 'linear-gradient(135deg, rgba(var(--color-bg-rgb), 0.95) 0%, rgba(var(--color-bg-rgb), 0.98) 100%)',
+          backdropFilter: 'blur(10px)',
+        }}
       >
         <div className="flex items-center justify-center pb-8">
             {agencyLogoUrl ? (
@@ -112,12 +140,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             )}
         </div>
         
-        <nav ref={navRef} className="relative flex-1 overflow-y-auto pr-2 -mr-2">
+        <nav ref={navRef} className="relative flex-1 pr-2 -mr-2">
             <div
-                className="absolute left-0 w-full rounded-lg shadow-glow-md pointer-events-none z-0 bg-[size:400%_400%] bg-[linear-gradient(135deg,var(--color-accent-gradient)_0%,var(--color-primary)_50%,var(--color-accent-gradient)_100%)] animate-liquid-pan"
+                className="absolute left-0 w-full rounded-xl shadow-glow-lg pointer-events-none z-0 bg-gradient-to-br from-[var(--color-primary)] via-brand-primary/90 to-[var(--color-accent)] animate-liquid-pan-enhanced"
                 style={{
                     ...highlightStyle,
-                    transition: 'top 0.4s cubic-bezier(0.25, 1, 0.5, 1), height 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s'
+                    transition: 'top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.4), 0 0 40px rgba(var(--color-primary-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(1px)',
                 }}
             />
             <ul>
@@ -133,23 +163,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
         
         <div className="mt-auto flex-shrink-0">
-             <div className="h-px bg-brand-border my-4"></div>
-             <ul>
-                 <li ref={el => { itemsRef.current.set('/settings', el) }}>
-                    <NavItem to="/settings" icon={<Settings className="w-6 h-6" />} label="Settings" isActive={pathname === '/settings'} />
-                </li>
-                 <li>
-                    <Link
-                      href="/portal/login"
-                      target="_blank"
-                      className="relative z-10 flex items-center p-3 my-1.5 rounded-lg transition-all duration-300 ease-in-out hover:scale-105 text-brand-text-secondary hover:bg-brand-surface/50 hover:text-brand-text-primary"
-                    >
-                      <ExternalLink className="w-6 h-6" />
-                      <span className="ml-4 font-semibold whitespace-nowrap">Client Portal</span>
-                    </Link>
-                </li>
-             </ul>
-        </div>
+              <div className="h-px bg-gradient-to-r from-transparent via-brand-border/60 to-transparent my-4 animate-pulse"></div>
+              <ul className="space-y-1">
+                  <li ref={el => { itemsRef.current.set('/settings', el) }}>
+                     <NavItem to="/settings" icon={<Settings className="w-6 h-6" />} label="Settings" isActive={pathname === '/settings'} />
+                 </li>
+                  <li>
+                     <Link
+                       href="/portal/login"
+                       target="_blank"
+                       className="relative z-10 flex items-center p-3 my-1.5 rounded-xl transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.02] group overflow-hidden text-brand-text-secondary hover:bg-gradient-to-r hover:from-brand-surface/30 hover:to-brand-surface/60 hover:text-brand-text-primary hover:shadow-md"
+                     >
+                       <div className="transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110">
+                         <ExternalLink className="w-6 h-6" />
+                       </div>
+                       <span className="ml-4 font-semibold transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]">Client Portal</span>
+                       {/* Subtle animated border effect */}
+                       <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:translate-x-[100%]" />
+                     </Link>
+                 </li>
+              </ul>
+         </div>
       </aside>
     </>
   );

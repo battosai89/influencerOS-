@@ -5,7 +5,7 @@ import useStore from '../hooks/useStore';
 import { Notification } from '../types';
 import { Bell, Info, CheckCircle, AlertTriangle, XCircle, Trash2 } from 'lucide-react';
 
-const NotificationPanel: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
+const NotificationPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
     const { notifications, clearNotifications } = useStore();
 
     if (!isOpen) return null;

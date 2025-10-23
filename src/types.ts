@@ -113,19 +113,40 @@ export interface CampaignContent {
     };
 }
 
+export interface ManualAttribution {
+    id: string;
+    influencerId: string;
+    description: string;
+    conversions: number;
+    revenue: number;
+    platform?: 'Instagram' | 'TikTok' | 'YouTube';
+    postUrl?: string;
+    metrics?: {
+        views?: number;
+        likes?: number;
+        comments?: number;
+        shares?: number;
+        saves?: number;
+        clicks?: number;
+    };
+    notes?: string;
+    date: string;
+}
+
 export interface Campaign {
-  id: string;
-  name: string;
-  brandId: string;
-  influencerIds: string[];
-  startDate: string;
-  endDate: string;
-  content: CampaignContent[];
-  roi: number;
-  budget: number;
-  category: string;
-  milestones: { name: string; date: string }[];
-  status: 'Planning' | 'Creator Outreach' | 'Content Creation' | 'Approval' | 'Live' | 'Completed';
+   id: string;
+   name: string;
+   brandId: string;
+   influencerIds: string[];
+   startDate: string;
+   endDate: string;
+   content: CampaignContent[];
+   roi: number;
+   budget: number;
+   category: string;
+   milestones: { name: string; date: string }[];
+   status: 'Planning' | 'Creator Outreach' | 'Content Creation' | 'Approval' | 'Live' | 'Completed';
+   attributionData?: ManualAttribution[];
 }
 
 export interface ContentComment {
@@ -279,11 +300,87 @@ export interface DashboardTemplate {
  }
 
 export interface Connection {
-   id: string;
-   name: string;
-   type: 'google' | 'facebook' | 'instagram' | 'tiktok' | 'youtube';
-   status: 'connected' | 'disconnected' | 'error';
-   lastSync?: Date;
-   accountId?: string;
-   accountName?: string;
+    id: string;
+    name: string;
+    type: 'google' | 'facebook' | 'instagram' | 'tiktok' | 'youtube';
+    status: 'connected' | 'disconnected' | 'error';
+    lastSync?: Date;
+    accountId?: string;
+    accountName?: string;
+}
+
+export interface InboxMessage {
+    id: string;
+    subject: string;
+    sender: string;
+    senderEmail: string;
+    content: string;
+    timestamp: string;
+    folder: 'Inbox' | 'Sent' | 'Archived' | 'Trash';
+    isRead: boolean;
+    priority?: 'low' | 'normal' | 'high';
+    attachments?: Array<{
+        name: string;
+        url: string;
+        size: number;
+    }>;
+}
+
+export interface CustomReport {
+    id: string;
+    name: string;
+    description: string;
+    type: 'financial' | 'campaign' | 'influencer' | 'client';
+    filters: Record<string, any>;
+    createdAt: string;
+    lastRun?: string;
+    schedule?: 'daily' | 'weekly' | 'monthly';
+}
+
+
+export interface TeamMember {
+    id: string;
+    name: string;
+    role: string;
+    email: string;
+    avatarUrl?: string;
+    department: string;
+    joinDate: string;
+    status: 'active' | 'inactive';
+}
+
+export interface ToolDependencies {
+    influencers: Influencer[];
+    brands: Brand[];
+    contracts: Contract[];
+    campaigns: Campaign[];
+    tasks: Task[];
+    transactions: Transaction[];
+    invoices: Invoice[];
+    // Core actions - map store methods to expected format
+    addTask: (task: Omit<Task, 'id'>) => void;
+    updateTask: (id: string, updates: Partial<Task>) => void;
+    scheduleEvent: (event: any) => void;
+    createInvoice: (invoice: any) => void;
+    logTransaction: (transaction: any) => void;
+    createClient: (clientData: { client_type: 'influencer' | 'brand', name: string, details?: string }) => void;
+    updateContract: (id: string, updates: Partial<Contract>) => void;
+    addContractTemplate: (templateData: Pick<ContractTemplate, 'name' | 'description'>) => void;
+    createCampaign: (campaign: any) => void;
+    // Mock implementations for tools that don't exist in store
+    findInfluencers: () => Promise<Influencer[]>;
+    vetInfluencerProfile: () => Promise<any>;
+    logClientInteraction: () => void;
+    generateCampaignBrief: () => Promise<string>;
+    sendInvoiceReminder: () => void;
+    logPayment: () => void;
+    trackInfluencerPayout: () => void;
+    calculateCampaignProfitability: () => Promise<any>;
+    generateFinancialReport: () => Promise<any>;
+    sendContractForSignature: () => void;
+    flagExpiringContracts: () => Promise<string[]>;
+    generateContentIdeas: () => Promise<string[]>;
+    draftSocialMediaCopy: () => Promise<string>;
+    draftOutreachEmail: () => Promise<string>;
+    generateCampaignReport: () => Promise<any>;
 }

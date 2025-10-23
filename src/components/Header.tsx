@@ -39,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick }) => {
   }, []);
 
   return (
-    <header className="flex justify-between items-center animate-page-enter">
+    <header className="flex justify-between items-center animate-page-enter px-8 pt-8">
       <div>
         <h1 className="text-2xl font-bold text-brand-text-primary font-display">Welcome back, {userName}</h1>
         <p className="text-brand-text-secondary">Here&apos;s what&apos;s happening today.</p>
@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick }) => {
                     </span>
                 )}
             </button>
-            <NotificationPanel isOpen={isPanelOpen} />
+            <NotificationPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} />
         </div>
         
         <div className="w-10 h-10 rounded-full bg-brand-surface border-2 border-brand-border flex items-center justify-center font-bold text-brand-text-primary transition-all duration-200 ease-in-out hover:scale-110 hover:shadow-glow-sm">

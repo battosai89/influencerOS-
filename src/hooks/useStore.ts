@@ -80,6 +80,7 @@ interface StoreState {
   // Supabase UI State
   supabaseLoading: boolean;
   supabaseError: string | null;
+  dataInitialized: boolean;
 
   // Data
     influencers: Influencer[];
@@ -136,6 +137,7 @@ interface StoreActions {
   addClient: (data: Partial<Influencer> | Partial<Brand>, type: 'influencer' | 'brand') => void;
   updateInfluencerStatus: (id: string, status: Influencer['status']) => void;
   deleteInfluencer: (id: string) => void;
+  deleteBrand: (id: string) => void;
 
   createCampaign: (data: Omit<Campaign, 'id' | 'content' | 'roi'>) => void;
   updateCampaignStatus: (id: string, status: Campaign['status']) => void;
@@ -150,7 +152,7 @@ interface StoreActions {
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   deleteTask: (taskId: string) => void;
 
-  scheduleEvent: (event: Omit<Event, 'id'>) => void;
+  scheduleEvent: (event: any) => void;
   updateEvent: (eventId: string, updates: Partial<Event>) => void;
   deleteEvent: (eventId: string) => void;
   
@@ -161,6 +163,7 @@ interface StoreActions {
   addContentPiece: (contentPiece: Omit<ContentPiece, 'id' | 'comments' | 'version'>) => void;
   updateContentPieceStatus: (id: string, status: ContentPiece['status']) => void;
   addContentComment: (contentId: string, comment: Omit<ContentComment, 'id'|'timestamp'>) => void;
+  addManualAttribution: (campaignId: string, attributionData: { influencerId: string; description: string; conversions: number; revenue: number }) => void;
 
   logInfluencerInteraction: (influencerId: string, log: Omit<CommunicationLogItem, 'id'>) => void;
 
@@ -200,6 +203,7 @@ interface StoreActions {
   initializeClientSession: () => void;
   enablePortalAccess: (brandId: string, email: string, password: string) => void;
   fetchSupabaseData: (tableName: string, setStateKey: keyof StoreState) => Promise<void>;
+  refreshAllData: () => Promise<void>;
 }
 
 type Store = StoreState & StoreActions;
@@ -256,28 +260,35 @@ const useStore = create<Store>((set, get) => ({
   // Supabase UI State Initial State
   supabaseLoading: false,
   supabaseError: null,
+  dataInitialized: false,
     
     // --- ACTIONS ---
 
     // Getters
-    getInfluencer: (id) => get().supabaseInfluencers.find(i => i.id === id),
-  getBrand: (id) => get().supabaseBrands.find(b => b.id === id),
-    getContract: (id) => get().supabaseContracts.find(c => c.id === id),
-  getCampaign: (id) => get().supabaseCampaigns.find(c => c.id === id),
-  getContentPiece: (id) => get().supabaseContentPieces.find(c => c.id === id),
-  getContractTemplate: (id) => get().supabaseContractTemplates.find(t => t.id === id),
+    getInfluencer: (id) => get().influencers.find(i => i.id === id),
+    getBrand: (id) => get().brands.find(b => b.id === id),
+    getContract: (id) => get().contracts.find(c => c.id === id),
+    getCampaign: (id) => get().campaigns.find(c => c.id === id),
+    getContentPiece: (id) => get().contentPieces.find(c => c.id === id),
+    getContractTemplate: (id) => get().contractTemplates.find(t => t.id === id),
 
     // Data mutations
     addClient: async (data, type) => {
       if (type === 'influencer') {
         const newInfluencer = await supabaseCrudService.addInfluencer(data as Partial<Influencer>);
         if (newInfluencer) {
-          set((state: StoreState) => ({ supabaseInfluencers: [...state.supabaseInfluencers, newInfluencer] }));
+          set((state: StoreState) => ({
+            supabaseInfluencers: [...state.supabaseInfluencers, newInfluencer],
+            influencers: [...state.influencers, newInfluencer]
+          }));
         }
       } else {
         const newBrand = await supabaseCrudService.addBrand(data as Partial<Brand>);
         if (newBrand) {
-          set((state: StoreState) => ({ supabaseBrands: [...state.supabaseBrands, newBrand] }));
+          set((state: StoreState) => ({
+            supabaseBrands: [...state.supabaseBrands, newBrand],
+            brands: [...state.brands, newBrand]
+          }));
         }
       }
     },
@@ -286,7 +297,8 @@ const useStore = create<Store>((set, get) => ({
       const updatedInfluencer = await supabaseCrudService.updateInfluencer(id, { status });
       if (updatedInfluencer) {
         set((state: StoreState) => ({
-          supabaseInfluencers: state.supabaseInfluencers.map(i => i.id === id ? { ...i, status } : i)
+          supabaseInfluencers: state.supabaseInfluencers.map(i => i.id === id ? { ...i, status } : i),
+          influencers: state.influencers.map(i => i.id === id ? { ...i, status } : i)
         }));
       }
     },
@@ -295,7 +307,18 @@ const useStore = create<Store>((set, get) => ({
       const success = await supabaseCrudService.deleteInfluencer(id);
       if (success) {
         set((state: StoreState) => ({
-          supabaseInfluencers: state.supabaseInfluencers.filter(i => i.id !== id)
+          supabaseInfluencers: state.supabaseInfluencers.filter(i => i.id !== id),
+          influencers: state.influencers.filter(i => i.id !== id)
+        }));
+      }
+    },
+
+    deleteBrand: async (id) => {
+      const success = await supabaseCrudService.deleteBrand(id);
+      if (success) {
+        set((state: StoreState) => ({
+          supabaseBrands: state.supabaseBrands.filter(b => b.id !== id),
+          brands: state.brands.filter(b => b.id !== id)
         }));
       }
     },
@@ -380,7 +403,10 @@ const useStore = create<Store>((set, get) => ({
     scheduleEvent: async (event) => {
       const newEvent = await supabaseCrudService.addEvent(event);
       if (newEvent) {
-        set((state: StoreState) => ({ supabaseEvents: [...state.supabaseEvents, newEvent] }));
+        set((state: StoreState) => ({
+          supabaseEvents: [...state.supabaseEvents, newEvent],
+          events: [...state.events, newEvent]
+        }));
       }
     },
 
@@ -388,7 +414,8 @@ const useStore = create<Store>((set, get) => ({
       const updatedEvent = await supabaseCrudService.updateEvent(eventId, updates);
       if (updatedEvent) {
         set((state: StoreState) => ({
-          supabaseEvents: state.supabaseEvents.map(event => event.id === eventId ? { ...event, ...updates } : event)
+          supabaseEvents: state.supabaseEvents.map(event => event.id === eventId ? { ...event, ...updates } : event),
+          events: state.events.map(event => event.id === eventId ? { ...event, ...updates } : event)
         }));
       }
     },
@@ -397,7 +424,8 @@ const useStore = create<Store>((set, get) => ({
       const success = await supabaseCrudService.deleteEvent(eventId);
       if (success) {
         set((state: StoreState) => ({
-          supabaseEvents: state.supabaseEvents.filter(event => event.id !== eventId)
+          supabaseEvents: state.supabaseEvents.filter(event => event.id !== eventId),
+          events: state.events.filter(event => event.id !== eventId)
         }));
       }
     },
@@ -426,6 +454,20 @@ const useStore = create<Store>((set, get) => ({
             c.id === contentId
             ? { ...c, comments: [...c.comments, { id: generateId(), timestamp: new Date().toISOString(), ...comment }] }
             : c
+        )
+    })),
+
+    addManualAttribution: (campaignId, attributionData) => set((state: StoreState) => ({
+        supabaseCampaigns: state.supabaseCampaigns.map(campaign =>
+            campaign.id === campaignId
+                ? {
+                    ...campaign,
+                    attributionData: [
+                        ...(campaign.attributionData || []),
+                        { id: generateId(), date: new Date().toISOString(), ...attributionData }
+                    ]
+                }
+                : campaign
         )
     })),
 
@@ -530,7 +572,7 @@ const useStore = create<Store>((set, get) => ({
         if (!activeTab || activeTab.layout.some(w => w.id === widgetId)) return state;
 
         // Simple placement logic: find the first available spot
-        const newWidget: DashboardLayoutItem = { id: widgetId, widgetId: widgetId, x: 0, y: 100, w: widgetConfig.defaultSpan, h: 1 };
+        const newWidget: DashboardLayoutItem = { id: widgetId, widgetId: widgetId, x: 0, y: 0, w: widgetConfig.defaultSpan, h: 1 };
         const newLayout = [...activeTab.layout, newWidget];
         
         const newTabs = state.dashboardTabs.map(t => t.id === state.activeDashboardTabId ? { ...t, layout: newLayout } : t);
@@ -625,46 +667,56 @@ const useStore = create<Store>((set, get) => ({
         set({ supabaseLoading: true, supabaseError: null });
         try {
             switch (tableName) {
-                case 'influencers':
+                case 'influencers': {
                     const influencerData = await supabaseCrudService.fetchInfluencers() || [];
                     set({ supabaseInfluencers: influencerData, supabaseLoading: false });
                     break;
-                case 'brands':
+                }
+                case 'brands': {
                     const brandData = await supabaseCrudService.fetchBrands() || [];
                     set({ supabaseBrands: brandData, supabaseLoading: false });
                     break;
-                case 'contracts':
+                }
+                case 'contracts': {
                     const contractData = await supabaseCrudService.fetchContracts() || [];
                     set({ supabaseContracts: contractData, supabaseLoading: false });
                     break;
-                case 'campaigns':
+                }
+                case 'campaigns': {
                     const campaignData = await supabaseCrudService.fetchCampaigns() || [];
                     set({ supabaseCampaigns: campaignData, supabaseLoading: false });
                     break;
-                case 'tasks':
+                }
+                case 'tasks': {
                     const taskData = await supabaseCrudService.fetchTasks() || [];
                     set({ supabaseTasks: taskData, supabaseLoading: false });
                     break;
-                case 'transactions':
+                }
+                case 'transactions': {
                     const transactionData = await fetchData('transactions') || [];
                     set({ supabaseTransactions: transactionData as Transaction[], supabaseLoading: false });
                     break;
-                case 'events':
+                }
+                case 'events': {
                     const eventData = await supabaseCrudService.fetchEvents() || [];
                     set({ supabaseEvents: eventData, supabaseLoading: false });
                     break;
-                case 'content_pieces':
+                }
+                case 'content_pieces': {
                     const contentData = await supabaseCrudService.fetchContentPieces() || [];
                     set({ supabaseContentPieces: contentData, supabaseLoading: false });
                     break;
-                case 'invoices':
+                }
+                case 'invoices': {
                     const invoiceData = await supabaseCrudService.fetchInvoices() || [];
                     set({ supabaseInvoices: invoiceData, supabaseLoading: false });
                     break;
-                case 'contract_templates':
+                }
+                case 'contract_templates': {
                     const templateData = await supabaseCrudService.fetchContractTemplates() || [];
                     set({ supabaseContractTemplates: templateData, supabaseLoading: false });
                     break;
+                }
                 default:
                     throw new Error(`Unknown table name: ${tableName}`);
             }
@@ -672,6 +724,68 @@ const useStore = create<Store>((set, get) => ({
             console.error(`Error fetching ${tableName}:`, error);
             set({ supabaseError: error instanceof Error ? error.message : 'Unknown error', supabaseLoading: false });
         }
+      },
+
+    refreshAllData: async () => {
+      try {
+        console.log('Refreshing all data...');
+        set({ supabaseLoading: true, supabaseError: null });
+
+        const [influencers, brands, contracts, campaigns, tasks, transactions, events, content_pieces, invoices, contract_templates] = await Promise.all([
+          supabaseCrudService.fetchInfluencers(),
+          supabaseCrudService.fetchBrands(),
+          supabaseCrudService.fetchContracts(),
+          supabaseCrudService.fetchCampaigns(),
+          supabaseCrudService.fetchTasks(),
+          fetchData('transactions'),
+          supabaseCrudService.fetchEvents(),
+          supabaseCrudService.fetchContentPieces(),
+          supabaseCrudService.fetchInvoices(),
+          supabaseCrudService.fetchContractTemplates(),
+        ]);
+
+        console.log('Refreshed data:', {
+          influencers: influencers?.length || 0,
+          brands: brands?.length || 0,
+          contracts: contracts?.length || 0,
+          campaigns: campaigns?.length || 0
+        });
+
+        // Update both Supabase and local collections
+        set({
+          supabaseInfluencers: influencers || [],
+          supabaseBrands: brands || [],
+          supabaseContracts: contracts || [],
+          supabaseCampaigns: campaigns || [],
+          supabaseTasks: tasks || [],
+          supabaseTransactions: (transactions as Transaction[]) || [],
+          supabaseEvents: events || [],
+          supabaseContentPieces: content_pieces || [],
+          supabaseInvoices: invoices || [],
+          supabaseContractTemplates: contract_templates || [],
+          // Also update local collections
+          influencers: influencers || [],
+          brands: brands || [],
+          contracts: contracts || [],
+          campaigns: campaigns || [],
+          tasks: tasks || [],
+          transactions: (transactions as Transaction[]) || [],
+          events: events || [],
+          contentPieces: content_pieces || [],
+          invoices: invoices || [],
+          contractTemplates: contract_templates || [],
+          supabaseLoading: false,
+          dataInitialized: true,
+        });
+
+        console.log('All data refreshed successfully');
+      } catch (error) {
+        console.error('Error refreshing data:', error);
+        set({
+          supabaseError: error instanceof Error ? error.message : 'Unknown error',
+          supabaseLoading: false
+        });
+      }
     },
 
   // Supabase Actions
@@ -680,35 +794,85 @@ const useStore = create<Store>((set, get) => ({
 
   // Initial data fetch from Supabase
   // This will run once when the store is initialized
-  // You might want to move this to a dedicated data loading component or hook
-  // depending on your application's data loading strategy.
   (async () => {
-    const [influencers, brands, contracts, campaigns, tasks, transactions, events, content_pieces, invoices, contract_templates] = await Promise.all([
-      supabaseCrudService.fetchInfluencers(),
-      supabaseCrudService.fetchBrands(),
-      supabaseCrudService.fetchContracts(),
-      supabaseCrudService.fetchCampaigns(),
-      supabaseCrudService.fetchTasks(),
-      fetchData('transactions'),
-      supabaseCrudService.fetchEvents(),
-      supabaseCrudService.fetchContentPieces(),
-      supabaseCrudService.fetchInvoices(),
-      supabaseCrudService.fetchContractTemplates(),
-    ]);
+    try {
+      console.log('Initializing store with Supabase data...');
+      const [influencers, brands, contracts, campaigns, tasks, transactions, events, content_pieces, invoices, contract_templates] = await Promise.all([
+        supabaseCrudService.fetchInfluencers(),
+        supabaseCrudService.fetchBrands(),
+        supabaseCrudService.fetchContracts(),
+        supabaseCrudService.fetchCampaigns(),
+        supabaseCrudService.fetchTasks(),
+        fetchData('transactions'),
+        supabaseCrudService.fetchEvents(),
+        supabaseCrudService.fetchContentPieces(),
+        supabaseCrudService.fetchInvoices(),
+        supabaseCrudService.fetchContractTemplates(),
+      ]);
 
-    // Initialize with fetched data
-    useStore.setState({
-      supabaseInfluencers: influencers || [],
-      supabaseBrands: brands || [],
-      supabaseContracts: contracts || [],
-      supabaseCampaigns: campaigns || [],
-      supabaseTasks: tasks || [],
-      supabaseTransactions: (transactions as Transaction[]) || [],
-      supabaseEvents: events || [],
-      supabaseContentPieces: content_pieces || [],
-      supabaseInvoices: invoices || [],
-      supabaseContractTemplates: contract_templates || [],
-    });
+      console.log('Fetched data:', {
+        influencers: influencers?.length || 0,
+        brands: brands?.length || 0,
+        contracts: contracts?.length || 0,
+        campaigns: campaigns?.length || 0,
+        events: events?.length || 0
+      });
+
+      // Initialize with fetched data - populate both Supabase and local collections
+      useStore.setState({
+        supabaseInfluencers: influencers || [],
+        supabaseBrands: brands || [],
+        supabaseContracts: contracts || [],
+        supabaseCampaigns: campaigns || [],
+        supabaseTasks: tasks || [],
+        supabaseTransactions: (transactions as Transaction[]) || [],
+        supabaseEvents: events || [],
+        supabaseContentPieces: content_pieces || [],
+        supabaseInvoices: invoices || [],
+        supabaseContractTemplates: contract_templates || [],
+        // Also populate local collections for immediate UI updates
+        influencers: influencers || [],
+        brands: brands || [],
+        contracts: contracts || [],
+        campaigns: campaigns || [],
+        tasks: tasks || [],
+        transactions: (transactions as Transaction[]) || [],
+        events: events || [],
+        contentPieces: content_pieces || [],
+        invoices: invoices || [],
+        contractTemplates: contract_templates || [],
+      });
+
+      console.log('Store initialized successfully');
+
+      // Mark data as initialized
+      useStore.setState({ dataInitialized: true });
+    } catch (error) {
+      console.error('Error initializing store:', error);
+      // Set empty arrays as fallback
+      useStore.setState({
+        supabaseInfluencers: [],
+        supabaseBrands: [],
+        supabaseContracts: [],
+        supabaseCampaigns: [],
+        supabaseTasks: [],
+        supabaseTransactions: [],
+        supabaseEvents: [],
+        supabaseContentPieces: [],
+        supabaseInvoices: [],
+        supabaseContractTemplates: [],
+        influencers: [],
+        brands: [],
+        contracts: [],
+        campaigns: [],
+        tasks: [],
+        transactions: [],
+        events: [],
+        contentPieces: [],
+        invoices: [],
+        contractTemplates: [],
+      });
+    }
   })();
 
 export default useStore;

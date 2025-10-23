@@ -65,14 +65,14 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidt
 
   return createPortal(
     <div 
-      className={`fixed inset-0 bg-brand-bg/95 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-search-backdrop-out' : 'animate-search-backdrop-in'}`}
+      className={`fixed inset-0 bg-brand-bg/50 backdrop-blur-md z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-search-backdrop-out' : 'animate-search-backdrop-in'}`}
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
       <div 
-        className={`futuristic-border bg-brand-surface rounded-xl p-8 w-full ${maxWidthClasses[maxWidth]} relative ${isClosing ? 'animate-search-modal-out' : 'animate-search-modal-in'}`}
+        className={`futuristic-border bg-brand-bg rounded-xl p-8 w-full ${maxWidthClasses[maxWidth]} relative ${isClosing ? 'animate-search-modal-out' : 'animate-search-modal-in'}`}
         onClick={e => e.stopPropagation()}
       >
         <button onClick={handleClose} className="absolute top-4 right-4 text-brand-text-secondary hover:text-brand-text-primary transition-all duration-200 ease-in-out hover:scale-110" aria-label="Close modal">

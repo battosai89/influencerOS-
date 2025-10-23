@@ -3,8 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* stylelint-enable */
-
 :root {
   --color-bg: #111111;
   --color-surface: #1C1C1C;
@@ -17,16 +15,38 @@
   --color-success: #10B981; /* Green */
   --color-warning: #F59E0B; /* Amber */
   --color-error: #EF4444; /* Red */
-
   --color-accent-gradient: #EC4899; /* Default purple gradient */
-  --color-accent: #7C3AED; /* Default accent color */
-  --color-primary: #8B5CF6; /* Default primary color */
+   --color-accent: #7C3AED; /* Default accent color */
+   --color-primary: #8B5CF6; /* Default primary color */
 }
 
 @keyframes liquid-pan {
-  0% { background-position: 0% 50% }
-  50% { background-position: 100% 50% }
-  100% { background-position: 0% 50% }
+   0% { background-position: 0% 50% }
+   50% { background-position: 100% 50% }
+   100% { background-position: 0% 50% }
+}
+
+@keyframes liquid-pan-enhanced {
+   0% {
+     background-position: 0% 0%;
+     transform: scale(1) rotate(0deg);
+   }
+   25% {
+     background-position: 100% 100%;
+     transform: scale(1.02) rotate(0.5deg);
+   }
+   50% {
+     background-position: 100% 0%;
+     transform: scale(1.05) rotate(-0.5deg);
+   }
+   75% {
+     background-position: 0% 100%;
+     transform: scale(1.02) rotate(0.3deg);
+   }
+   100% {
+     background-position: 0% 0%;
+     transform: scale(1) rotate(0deg);
+   }
 }
 
 @keyframes pageEnter {
@@ -46,7 +66,7 @@
 
 @keyframes search-backdrop-in {
   from { opacity: 0; }
-  to { opacity: 0.8; }
+  to { opacity: 1; }
 }
 
 @keyframes search-backdrop-out {
@@ -62,6 +82,35 @@
 @keyframes search-modal-out {
   from { opacity: 1; transform: scale(1); }
   to { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
 }
 
 @keyframes toastIn {
@@ -133,6 +182,41 @@ html, body {
   overflow-x: hidden;
 }
 
+/* Consistent spacing utilities for dashboard components */
+.dashboard-spacing {
+  --dashboard-spacing-xs: 0.25rem;
+  --dashboard-spacing-sm: 0.5rem;
+  --dashboard-spacing-md: 0.75rem;
+  --dashboard-spacing-lg: 1rem;
+  --dashboard-spacing-xl: 1.25rem;
+  --dashboard-spacing-2xl: 1.5rem;
+  --dashboard-spacing-3xl: 2rem;
+}
+
+/* Improved widget container spacing */
+.widget-container {
+  container-type: inline-size;
+}
+
+/* Better responsive spacing for dashboard grids */
+@media (width >= 1024px) {
+  .dashboard-grid {
+    gap: var(--dashboard-spacing-lg);
+  }
+}
+
+@media (768px <= width < 1024px) {
+  .dashboard-grid {
+    gap: var(--dashboard-spacing-md);
+  }
+}
+
+@media (width < 768px) {
+  .dashboard-grid {
+    gap: var(--dashboard-spacing-sm);
+  }
+}
+
 .futuristic-border {
   position: relative;
 }
@@ -154,7 +238,7 @@ html, body {
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
+  -webkit-mask-composite: source-out;
   mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -188,9 +272,12 @@ html, body {
 .animate-search-modal-out { animation: search-modal-out 0.3s ease-out forwards; }
 .animate-toast-in { animation: toastIn 0.5s cubic-bezier(0.25, 1, 0.5, 1); }
 .animate-toast-out { animation: toastOut 0.5s cubic-bezier(0.25, 1, 0.5, 1); }
-/* .animate-pulsate-glow { animation: pulsate-glow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; } */
+.animate-fade-in { animation: fade-in 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+.animate-bounce-gentle { animation: bounce-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.animate-pulse-gentle { animation: pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .animate-pulse-dot { animation: pulse-dot 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .animate-liquid-pan { animation: liquid-pan 15s ease infinite; }
+.animate-liquid-pan-enhanced { animation: liquid-pan-enhanced 20s ease-in-out infinite; }
 
 /* Glow utilities - COMPLETELY REMOVED */
 

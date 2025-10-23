@@ -68,8 +68,8 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onMenuClick }) => {
         </button>
 
         <div className="relative" ref={panelRef}>
-            <button
-                onClick={handleBellClick}
+          <button
+            onClick={handleBellClick}
                 className="relative text-brand-text-secondary hover:text-brand-text-primary transition-all duration-200 ease-in-out hover:scale-110"
                 aria-label="View notifications"
                 aria-expanded={isPanelOpen}
@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onMenuClick }) => {
                     </span>
                 )}
             </button>
-            <NotificationPanel isOpen={isPanelOpen} />
+            <NotificationPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} />
         </div>
 
         <div className="w-10 h-10 rounded-full bg-brand-surface border-2 border-brand-border flex items-center justify-center font-bold text-brand-text-primary transition-all duration-200 ease-in-out hover:scale-110 hover:shadow-glow-sm">

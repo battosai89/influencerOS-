@@ -82,15 +82,6 @@ CREATE TABLE brands (
     "portalPassword" TEXT
 );
 
--- CreateTable: ContractClause
-CREATE TABLE "contractClauses" (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    content TEXT NOT NULL,
-    "contractId" TEXT REFERENCES contracts(id) ON DELETE CASCADE,
-    "contractTemplateId" TEXT REFERENCES "contractTemplates"(id) ON DELETE CASCADE
-);
-
 -- CreateTable: ContractTemplate
 CREATE TABLE "contractTemplates" (
     id TEXT PRIMARY KEY,
@@ -111,15 +102,13 @@ CREATE TABLE contracts (
     "templateId" TEXT REFERENCES "contractTemplates"(id) ON DELETE SET NULL
 );
 
--- CreateTable: CampaignContent
-CREATE TABLE "campaignContents" (
+-- CreateTable: ContractClause
+CREATE TABLE "contractClauses" (
     id TEXT PRIMARY KEY,
-    url TEXT NOT NULL,
-    platform TEXT NOT NULL,
-    views INTEGER,
-    likes INTEGER,
-    comments INTEGER,
-    "campaignId" TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    "contractId" TEXT REFERENCES contracts(id) ON DELETE CASCADE,
+    "contractTemplateId" TEXT REFERENCES "contractTemplates"(id) ON DELETE CASCADE
 );
 
 -- CreateTable: Campaign
@@ -133,6 +122,17 @@ CREATE TABLE campaigns (
     budget REAL NOT NULL,
     category TEXT NOT NULL,
     status TEXT NOT NULL
+);
+
+-- CreateTable: CampaignContent
+CREATE TABLE "campaignContents" (
+    id TEXT PRIMARY KEY,
+    url TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    views INTEGER,
+    likes INTEGER,
+    comments INTEGER,
+    "campaignId" TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE
 );
 
 -- CreateTable: CampaignInfluencer
@@ -150,17 +150,6 @@ CREATE TABLE "campaignMilestones" (
     "campaignId" TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE
 );
 
--- CreateTable: ContentComment
-CREATE TABLE "contentComments" (
-    id TEXT PRIMARY KEY,
-    "authorName" TEXT NOT NULL,
-    "authorAvatarUrl" TEXT NOT NULL,
-    "authorRole" TEXT NOT NULL,
-    text TEXT NOT NULL,
-    timestamp TEXT NOT NULL,
-    "contentPieceId" TEXT NOT NULL REFERENCES "contentPieces"(id) ON DELETE CASCADE
-);
-
 -- CreateTable: ContentPiece
 CREATE TABLE "contentPieces" (
     id TEXT PRIMARY KEY,
@@ -174,6 +163,17 @@ CREATE TABLE "contentPieces" (
     "contentUrl" TEXT NOT NULL,
     platform TEXT NOT NULL,
     version INTEGER NOT NULL
+);
+
+-- CreateTable: ContentComment
+CREATE TABLE "contentComments" (
+    id TEXT PRIMARY KEY,
+    "authorName" TEXT NOT NULL,
+    "authorAvatarUrl" TEXT NOT NULL,
+    "authorRole" TEXT NOT NULL,
+    text TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    "contentPieceId" TEXT NOT NULL REFERENCES "contentPieces"(id) ON DELETE CASCADE
 );
 
 -- CreateTable: Task
@@ -262,6 +262,20 @@ CREATE TABLE notifications (
     read BOOLEAN NOT NULL
 );
 
+-- CreateTable: ChatForm
+CREATE TABLE "chatForms" (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL
+);
+
+-- CreateTable: DisplayChatMessage
+CREATE TABLE "displayChatMessages" (
+    id SERIAL PRIMARY KEY,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    "chatFormId" TEXT REFERENCES "chatForms"(id) ON DELETE SET NULL
+);
+
 -- CreateTable: FormField
 CREATE TABLE "formFields" (
     id TEXT PRIMARY KEY,
@@ -278,20 +292,6 @@ CREATE TABLE "formFieldOptions" (
     value TEXT NOT NULL,
     label TEXT NOT NULL,
     "formFieldId" TEXT NOT NULL REFERENCES "formFields"(id) ON DELETE CASCADE
-);
-
--- CreateTable: ChatForm
-CREATE TABLE "chatForms" (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL
-);
-
--- CreateTable: DisplayChatMessage
-CREATE TABLE "displayChatMessages" (
-    id SERIAL PRIMARY KEY,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    "chatFormId" TEXT REFERENCES "chatForms"(id) ON DELETE SET NULL
 );
 
 -- CreateTable: DisplayChatMessagePlan

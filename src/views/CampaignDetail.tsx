@@ -1,29 +1,16 @@
 
-import * as React from 'react';
-import { useState, useMemo, useRef } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import useStore from '../hooks/useStore';
-import { CampaignContent, Campaign } from '../types';
-import { exportPageToPdf } from '../services/downloadUtils';
-import { Download, Loader2, Share2, Copy, Check } from 'lucide-react';
 import Image from 'next/image';
+import useStore from '../hooks/useStore';
+import DashboardCard from '../components/analytics/DashboardCard';
+import { Campaign, CampaignContent } from '../types';
+import { exportPageToPdf } from '../services/downloadUtils';
+import { Download, Loader2, Share2, Copy, Check, TrendingUp, BarChart } from 'lucide-react';
+import notificationService from '../services/notificationService';
 
-// Simple DashboardCard component
-const DashboardCard: React.FC<{ title: string; value: string | number; _changeType?: 'increase' | 'decrease' }> = ({ title, value, _changeType }) => (
-  <div className="futuristic-border bg-brand-surface rounded-xl p-6">
-    <h3 className="text-sm font-medium text-brand-text-secondary mb-2">{title}</h3>
-    <p className="text-2xl font-bold text-brand-text-primary">{value}
-      {_changeType && (
-        <span className={`ml-2 text-sm font-medium ${
-          _changeType === 'increase' ? 'text-green-500' : 'text-red-500'
-        }`}>
-          {_changeType === 'increase' ? '▲' : '▼'}
-        </span>
-      )}
-    </p>
-  </div>
-);
+// Using the enhanced DashboardCard component from analytics
 
 const ContentCard: React.FC<{ content: CampaignContent }> = ({ content }) => (
     <div className="bg-brand-bg p-4 rounded-lg">
@@ -46,6 +33,93 @@ const TabButton: React.FC<{ name: string; label: string; activeTab: string; setA
             {label}
             {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" />}
         </button>
+    );
+};
+
+const AttributionTab: React.FC<{ campaign: Campaign }> = ({ campaign }) => {
+    const { getInfluencer, addManualAttribution } = useStore();
+    const [influencerId, setInfluencerId] = useState('');
+    const [description, setDescription] = useState('');
+    const [conversions, setConversions] = useState('');
+    const [revenue, setRevenue] = useState('');
+
+    const participatingInfluencers = campaign.influencerIds.map(id => getInfluencer(id)).filter(Boolean);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (influencerId && description && conversions && revenue) {
+            addManualAttribution(campaign.id, {
+                influencerId,
+                description,
+                conversions: parseInt(conversions),
+                revenue: parseFloat(revenue)
+            });
+            notificationService.show({ message: 'Attribution data logged!', type: 'success' });
+            // Reset form
+            setInfluencerId('');
+            setDescription('');
+            setConversions('');
+            setRevenue('');
+        }
+    };
+
+    const totalAttributedRevenue = campaign.attributionData?.reduce((sum, item) => sum + item.revenue, 0) || 0;
+    const totalAttributedConversions = campaign.attributionData?.reduce((sum, item) => sum + item.conversions, 0) || 0;
+    const formatCurrency = (amount: number) => amount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 futuristic-border bg-brand-surface rounded-xl p-6">
+                <h3 className="text-xl font-bold text-brand-text-primary mb-4">Manual Attribution Log</h3>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end bg-brand-bg p-4 rounded-lg mb-6">
+                    <div className="lg:col-span-1">
+                        <label className="text-xs text-brand-text-secondary">Influencer</label>
+                        <select value={influencerId} onChange={e => setInfluencerId(e.target.value)} required className="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 mt-1 text-sm text-brand-text-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                            <option value="">Select...</option>
+                            {participatingInfluencers.map(inf => inf && <option key={inf.id} value={inf.id}>{inf.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="lg:col-span-2">
+                        <label className="text-xs text-brand-text-secondary">Description</label>
+                        <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="e.g., Discount Code: ELENA20" required className="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 mt-1 text-sm text-brand-text-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"/>
+                    </div>
+                     <div>
+                        <label className="text-xs text-brand-text-secondary">Conversions</label>
+                        <input type="number" value={conversions} onChange={e => setConversions(e.target.value)} placeholder="50" required className="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 mt-1 text-sm text-brand-text-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"/>
+                    </div>
+                    <div>
+                        <label className="text-xs text-brand-text-secondary">Revenue ($)</label>
+                        <input type="number" step="0.01" value={revenue} onChange={e => setRevenue(e.target.value)} placeholder="2500" required className="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 mt-1 text-sm text-brand-text-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"/>
+                    </div>
+                    <button type="submit" className="sm:col-span-2 lg:col-span-5 bg-brand-primary text-white font-semibold py-2 rounded-lg hover:bg-brand-accent transition-colors text-sm">Log Data</button>
+                </form>
+
+                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                    {(campaign.attributionData || []).map(item => {
+                        const influencer = getInfluencer(item.influencerId);
+                        return (
+                            <div key={item.id} className="bg-brand-bg p-3 rounded-lg flex justify-between items-center text-sm">
+                                <div className="flex items-center gap-3">
+                                    <Image src={influencer?.avatarUrl || '/default-avatar.png'} alt={influencer?.name || 'Influencer'} width={32} height={32} className="w-8 h-8 rounded-full" />
+                                    <div>
+                                        <p className="font-semibold text-brand-text-primary">{item.description}</p>
+                                        <p className="text-xs text-brand-text-secondary">Attributed to {influencer?.name}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-bold text-brand-success">{formatCurrency(item.revenue)}</p>
+                                    <p className="text-xs text-brand-text-secondary">{item.conversions} conversions</p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                 </div>
+            </div>
+             <div className="space-y-4">
+                 <DashboardCard title="Total Attributed Revenue" value={formatCurrency(totalAttributedRevenue)} />
+                 <DashboardCard title="Total Attributed Conversions" value={totalAttributedConversions.toLocaleString()} />
+            </div>
+        </div>
     );
 };
 
@@ -83,8 +157,8 @@ const FinancialsTab: React.FC<{ campaign: Campaign }> = ({ campaign }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <DashboardCard title="Total Budget" value={formatCurrency(campaign.budget)} />
                 <DashboardCard title="Total Spend" value={formatCurrency(financialSummary.totalSpend)} />
-                <DashboardCard title="Remaining Budget" value={formatCurrency(financialSummary.remainingBudget)} _changeType={financialSummary.remainingBudget >= 0 ? 'increase' : 'decrease'} />
-                <DashboardCard title="Profit Margin" value={`${financialSummary.profitMargin.toFixed(1)}%`} _changeType={financialSummary.profitMargin >= 0 ? 'increase' : 'decrease'}/>
+                <DashboardCard title="Remaining Budget" value={formatCurrency(financialSummary.remainingBudget)} changeType={financialSummary.remainingBudget >= 0 ? 'increase' : 'decrease'} />
+                <DashboardCard title="Profit Margin" value={`${financialSummary.profitMargin.toFixed(1)}%`} changeType={financialSummary.profitMargin >= 0 ? 'increase' : 'decrease'}/>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -112,7 +186,7 @@ const FinancialsTab: React.FC<{ campaign: Campaign }> = ({ campaign }) => {
                 <div className="space-y-4">
                      <DashboardCard title="Total Revenue" value={formatCurrency(financialSummary.totalRevenue)} />
                      <DashboardCard title="Influencer Payouts" value={formatCurrency(financialSummary.influencerPayouts)} />
-                     <DashboardCard title="Net Profit" value={formatCurrency(financialSummary.profit)} _changeType={financialSummary.profit >= 0 ? 'increase' : 'decrease'} />
+                     <DashboardCard title="Net Profit" value={formatCurrency(financialSummary.profit)} changeType={financialSummary.profit >= 0 ? 'increase' : 'decrease'} />
                 </div>
             </div>
         </div>
@@ -165,6 +239,8 @@ const CampaignDetail: React.FC = () => {
         switch (activeTab) {
             case 'financials':
                 return <FinancialsTab campaign={campaign} />;
+            case 'attribution':
+                return <AttributionTab campaign={campaign} />;
             case 'content':
                 return (
                     <div className="futuristic-border bg-brand-surface rounded-xl p-6">
@@ -266,6 +342,7 @@ const CampaignDetail: React.FC = () => {
              <div className="border-b border-brand-border flex items-center gap-8">
                 <TabButton name="overview" label="Overview" activeTab={activeTab} setActiveTab={setActiveTab} />
                 <TabButton name="financials" label="Financials" activeTab={activeTab} setActiveTab={setActiveTab} />
+                <TabButton name="attribution" label="Attribution" activeTab={activeTab} setActiveTab={setActiveTab} />
                 <TabButton name="content" label="Content" activeTab={activeTab} setActiveTab={setActiveTab} />
                 <TabButton name="influencers" label="Influencers" activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>

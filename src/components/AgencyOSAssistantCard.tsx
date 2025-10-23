@@ -1,15 +1,13 @@
 "use client";
 
-import * as React from 'react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { OpenAI } from 'openai';
 import useStore from '../hooks/useStore';
-import { getInfluencerOSAssistantBriefing, runConversationWithTools, ToolDependencies } from '../services/aiService';
+import { getInfluencerOSAssistantBriefing, runConversationWithTools } from '../services/aiService';
 import SkeletonLoader from './SkeletonLoader';
 import { Send, Calendar, FileText, Receipt, Flame, CheckCircle, Bot, User, BrainCircuit, X } from 'lucide-react';
-import { DisplayChatMessage, ChatForm } from '../types';
-import { ContractTemplate } from '../types';
-import { OpenAI } from 'openai';
+import { DisplayChatMessage, ChatForm, ContractTemplate, ToolDependencies } from '../types';
 
 const BriefingSection = () => {
     const { tasks, events, transactions } = useStore();
@@ -17,16 +15,16 @@ const BriefingSection = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        getInfluencerOSAssistantBriefing(tasks, events, transactions)
+        getInfluencerOSAssistantBriefing()
             .then(setBriefing)
             .finally(() => setIsLoading(false));
-    }, [tasks, events, transactions]);
+    }, []);
 
     const formatBriefing = (text: string) => {
         const elements: React.ReactNode[] = [];
         const sanitizedText = text.replace(/<font color="purple">(.*?)<\/font>/g, '### $1');
         const lines = sanitizedText.split('\n').filter(line => line.trim() !== '');
-        
+
         let i = 0;
 
         const headingIconMap: { [key: string]: React.ReactNode } = {
@@ -36,7 +34,7 @@ const BriefingSection = () => {
             'notifications': <Receipt className="w-5 h-5 text-brand-primary flex-shrink-0" />,
             'action points': <Flame className="w-5 h-5 text-brand-primary flex-shrink-0" />,
         };
-        
+
         let currentHeading = '';
 
         while (i < lines.length) {
@@ -45,7 +43,7 @@ const BriefingSection = () => {
             if (line.startsWith('### ')) {
                 const headingText = line.replace('### ', '').trim();
                 currentHeading = headingText.toLowerCase();
-                
+
                 const iconKey = Object.keys(headingIconMap).find(key => currentHeading.includes(key));
                 const icon = iconKey ? headingIconMap[iconKey] : null;
 
@@ -208,7 +206,7 @@ const ChatSection: React.FC<{ initialCommand?: string | null }> = ({ initialComm
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [store.chatHistory]);
-    
+
     const handleSendMessage = useCallback(async (message: string | { formId: string; data: Record<string, string | number | boolean> }, confirmedToolCall?: OpenAI.Chat.Completions.ChatCompletionMessageToolCall | undefined) => {
         let newUserMessageContent: string;
         let currentMessages: DisplayChatMessage[] = [...store.chatHistory];
@@ -227,17 +225,17 @@ const ChatSection: React.FC<{ initialCommand?: string | null }> = ({ initialComm
         const newUserMessage: DisplayChatMessage = { id: Date.now(), role: 'user', content: newUserMessageContent };
         const assistantMessageId = Date.now() + 1;
         const assistantMessage: DisplayChatMessage = { id: assistantMessageId, role: 'assistant', content: '' };
-        
+
         const messagesWithUser = [...currentMessages, newUserMessage];
         store.setChatHistory([...messagesWithUser, assistantMessage]);
-        
+
         if (inputRef.current) inputRef.current.value = '';
         setUserInput('');
         setIsLoading(true);
-        
-       interface NavigateUpdate { path: string; state?: Record<string, unknown>; }
 
-       const onUpdate = (updates: Partial<DisplayChatMessage> & { _navigate?: NavigateUpdate }) => {
+        interface NavigateUpdate { path: string; state?: Record<string, unknown>; }
+
+        const onUpdate = (updates: Partial<DisplayChatMessage> & { _navigate?: NavigateUpdate }) => {
             if (updates._navigate) {
                 router.push(updates._navigate.path);
                 store.updateChatMessage(assistantMessageId, { content: updates.content || 'Navigating...' });
@@ -249,7 +247,7 @@ const ChatSection: React.FC<{ initialCommand?: string | null }> = ({ initialComm
         const apiHistory: { role: 'user' | 'assistant', content: string }[] = messagesWithUser
             .filter(m => m.role === 'user' || m.role === 'assistant')
             .map(({ role, content }) => ({ role: role as 'user' | 'assistant', content }));
-        
+
         // Convert Store to ToolDependencies format
         const toolDependencies: ToolDependencies = {
             influencers: dependenciesRef.current.influencers,
@@ -290,7 +288,7 @@ const ChatSection: React.FC<{ initialCommand?: string | null }> = ({ initialComm
             draftOutreachEmail: async () => '',
             generateCampaignReport: async () => ({}),
         };
-        
+
         try {
             await runConversationWithTools(apiHistory, toolDependencies, onUpdate, confirmedToolCall);
         } catch (error) {
@@ -320,7 +318,7 @@ const ChatSection: React.FC<{ initialCommand?: string | null }> = ({ initialComm
             handleSendMessage(text.trim());
         }
     };
-    
+
     const handleConfirmation = (e: React.MouseEvent, toolCall: OpenAI.Chat.Completions.ChatCompletionMessageToolCall | undefined, msgId: number) => {
         e.preventDefault();
         // Remove confirmation from the message so buttons disappear

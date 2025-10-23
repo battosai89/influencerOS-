@@ -16,16 +16,41 @@ export async function fetchData<T>(tableName: string): Promise<T[] | null> {
 
 // Generic add function
 export async function addData<T>(tableName: string, item: Partial<T>): Promise<T | null> {
-  const { data, error } = await supabase
-    .from(tableName)
-    .insert(item)
-    .select();
+  console.log(`🔄 Attempting to add to ${tableName}:`, item);
 
-  if (error) {
-    console.error(`Error adding to ${tableName}:`, error);
+  try {
+    const { data, error } = await supabase
+      .from(tableName)
+      .insert(item)
+      .select();
+
+    console.log(`📡 Supabase response for ${tableName}:`, { data, error });
+
+    if (error) {
+      console.error(`❌ Error adding to ${tableName}:`, error);
+      console.error('❌ Full error object:', JSON.stringify(error, null, 2));
+      console.error('❌ Error properties:', {
+        message: error?.message || 'No message',
+        details: error?.details || 'No details',
+        hint: error?.hint || 'No hint',
+        code: error?.code || 'No code'
+      });
+
+      // Check if it's a common Supabase error
+      if (error?.message?.includes('relation') && error?.message?.includes('does not exist')) {
+        console.error('🚨 DATABASE TABLE ISSUE: The "tasks" table does not exist in your Supabase database!');
+        console.error('💡 SOLUTION: Run setup_database.sql in your Supabase SQL Editor');
+      }
+
+      return null;
+    }
+
+    console.log(`✅ Successfully added to ${tableName}:`, data);
+    return data ? (data[0] as T) : null;
+  } catch (err) {
+    console.error(`💥 Exception adding to ${tableName}:`, err);
     return null;
   }
-  return data ? (data[0] as T) : null;
 }
 
 // Generic update function
@@ -85,13 +110,35 @@ export const supabaseCrudService = {
 
   // Tasks
   fetchTasks: () => fetchData<Task>('tasks'),
-  addTask: (task: Partial<Task>) => addData<Task>('tasks', task),
+  addTask: async (task: Partial<Task>) => {
+    console.log('supabaseCrudService addTask called with:', task);
+    try {
+      const result = await addData<Task>('tasks', task);
+      console.log('supabaseCrudService addTask result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in supabaseCrudService addTask:', error);
+      throw error;
+    }
+  },
   updateTask: (id: string, updates: Partial<Task>) => updateData<Task>('tasks', id, updates),
   deleteTask: (id: string) => deleteData('tasks', id),
 
   // Events
   fetchEvents: () => fetchData<Event>('events'),
-  addEvent: (event: Partial<Event>) => addData<Event>('events', event),
+  addEvent: (event: any) => {
+    const eventData = {
+      id: event.id,
+      title: event.title,
+      start: event.start, // Already in ISO format from the component
+      end: event.end,     // Already in ISO format from the component
+      allDay: event.allDay || false,
+      type: event.type,
+      brandId: event.brandId || null,
+      campaignId: event.campaignId || null,
+    };
+    return addData<Event>('events', eventData);
+  },
   updateEvent: (id: string, updates: Partial<Event>) => updateData<Event>('events', id, updates),
   deleteEvent: (id: string) => deleteData('events', id),
 

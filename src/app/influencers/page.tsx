@@ -4,13 +4,18 @@ import * as React from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
 import useStore from '@/hooks/useStore';
-import { Plus, Users, Star, MapPin, TrendingUp, Filter } from 'lucide-react';
+import { Plus, Users, Star, MapPin, TrendingUp, Filter, Edit, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { NewClientModal } from '@/components/CreationModals';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 const Influencers: React.FC = () => {
-    const { supabaseInfluencers: influencers } = useStore();
+    const { influencers, updateInfluencerStatus, deleteInfluencer } = useStore();
     const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'lead'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingInfluencer, setEditingInfluencer] = useState<any>(null);
+    const [deletingInfluencer, setDeletingInfluencer] = useState<any>(null);
 
     const filteredInfluencers = influencers.filter(influencer => {
         const matchesFilter = filter === 'all' || influencer.status === filter;
@@ -35,6 +40,22 @@ const Influencers: React.FC = () => {
         return num.toString();
     };
 
+    const handleEdit = (influencer: any) => {
+        setEditingInfluencer(influencer);
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = (influencer: any) => {
+        setDeletingInfluencer(influencer);
+    };
+
+    const confirmDelete = () => {
+        if (deletingInfluencer) {
+            deleteInfluencer(deletingInfluencer.id);
+            setDeletingInfluencer(null);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-page-enter">
             {/* Header */}
@@ -43,13 +64,13 @@ const Influencers: React.FC = () => {
                     <h1 className="text-3xl font-bold text-brand-text-primary font-display">Influencers</h1>
                     <p className="text-brand-text-secondary">Manage your influencer network</p>
                 </div>
-                <Link
-                    href="/influencers/new"
+                <button
+                    onClick={() => setIsModalOpen(true)}
                     className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-accent transition-all duration-200 ease-in-out hover:scale-105 flex items-center gap-2"
                 >
                     <Plus className="w-4 h-4" />
                     Add Influencer
-                </Link>
+                </button>
             </div>
 
             {/* Stats */}
@@ -128,31 +149,53 @@ const Influencers: React.FC = () => {
             {/* Influencers Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredInfluencers.map((influencer) => (
-                    <Link
+                    <div
                         key={influencer.id}
-                        href={`/influencers/${influencer.id}`}
                         className="bg-brand-surface futuristic-border rounded-xl p-6 hover:shadow-glow-md transition-all duration-300"
                     >
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 rounded-full bg-brand-bg flex items-center justify-center">
-                                {influencer.avatarUrl ? (
-                                    <Image 
-                                        src={influencer.avatarUrl} 
-                                        alt={influencer.name}
-                                        width={48}
-                                        height={48}
-                                        className="w-full h-full rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <span className="text-lg font-bold text-brand-text-primary">
-                                        {influencer.name.charAt(0).toUpperCase()}
-                                    </span>
-                                )}
+                        {/* Header with Avatar and Action Buttons */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-brand-bg flex items-center justify-center">
+                                    {influencer.avatarUrl ? (
+                                        <Image
+                                            src={influencer.avatarUrl}
+                                            alt={influencer.name}
+                                            width={48}
+                                            height={48}
+                                            className="w-full h-full rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-lg font-bold text-brand-text-primary">
+                                            {influencer.name.charAt(0).toUpperCase()}
+                                        </span>
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-brand-text-primary">{influencer.name}</h3>
+                                    <p className="text-sm text-brand-text-secondary">{influencer.platform}</p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <h3 className="font-semibold text-brand-text-primary">{influencer.name}</h3>
-                                <p className="text-sm text-brand-text-secondary">{influencer.platform}</p>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => handleEdit(influencer)}
+                                    className="p-2 text-brand-text-secondary hover:text-brand-primary rounded-full hover:bg-brand-bg transition-colors"
+                                    title="Edit influencer"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(influencer)}
+                                    className="p-2 text-brand-text-secondary hover:text-red-500 rounded-full hover:bg-brand-bg transition-colors"
+                                    title="Delete influencer"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
                             </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="mb-4">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(influencer.status)}`}>
                                 {influencer.status}
                             </span>
@@ -179,7 +222,7 @@ const Influencers: React.FC = () => {
                                 <span>{influencer.location}</span>
                             </div>
                         </div>
-                    </Link>
+                    </div>
                 ))}
             </div>
 
@@ -191,16 +234,36 @@ const Influencers: React.FC = () => {
                         {searchTerm ? "No influencers match your search" : "Get started by adding your first influencer"}
                     </p>
                     {!searchTerm && (
-                        <Link
-                            href="/influencers/new"
+                        <button
+                            onClick={() => setIsModalOpen(true)}
                             className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-accent transition-all duration-200 ease-in-out hover:scale-105 inline-flex items-center gap-2"
                         >
                             <Plus className="w-4 h-4" />
                             Add Influencer
-                        </Link>
+                        </button>
                     )}
                 </div>
             )}
+
+            {/* Client Creation/Edit Modal */}
+            <NewClientModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingInfluencer(null);
+                }}
+                taskToEdit={editingInfluencer}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={!!deletingInfluencer}
+                onClose={() => setDeletingInfluencer(null)}
+                onConfirm={confirmDelete}
+                title="Delete Influencer"
+                message={`Are you sure you want to delete "${deletingInfluencer?.name}"? This action cannot be undone.`}
+                confirmText="Delete Influencer"
+            />
         </div>
     );
 };
